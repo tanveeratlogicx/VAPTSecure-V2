@@ -1,0 +1,26 @@
+{
+  "name": "VAPTSecure",
+  "host": "66.170.180.137",
+  "protocol": "ftp",
+  "port": 21,
+  "username": "vaptsec@vaptsecure.net",
+  "password": "pPd8Lg4oXDgBeb",
+  "defaultProfile": "VAPTSecureV2",
+  "profiles": {
+    "VAPTSecureV2": {
+      "context": "VAPTSecureV2",
+    "remotePath": "plugins/VAPTSecureV2/",
+      "uploadOnSave": true
+    },
+    "VAPTSecure-Clean": {
+      "context": "VAPTSecure-Clean",
+      "remotePath": "plugins/VAPTSecure-Clean",
+      "uploadOnSave": true
+    },
+    "plugin-c": {
+      "context": "plugins/plugin-c",
+      "remotePath": "/var/www/html/wp-content/plugins/plugin-c",
+      "uploadOnSave": true
+    }
+  }
+}

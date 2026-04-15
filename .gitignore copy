@@ -72,5 +72,3 @@ vapt-*-config-*.php
 # Dashboard screenshots / debug images
 vapt-dashboard.png
 *.png
-
-temp/*

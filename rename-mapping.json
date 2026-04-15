@@ -1,0 +1,322 @@
+{
+  "version": "1.0.0",
+  "description": "Complete rename mapping for VAPTSecure → VAPTGuard clone",
+  "last_updated": "2026-04-15",
+
+  "core_rename": {
+    "plugin_name_original": "VAPTSecure Clean",
+    "plugin_name_new": "VAPTGuard Pro",
+    "text_domain_original": "vaptsecure",
+    "text_domain_new": "vaptguard",
+    "prefix_original": "vaptsecure",
+    "prefix_new": "vaptguard",
+    "class_prefix_original": "VAPTSECURE",
+    "class_prefix_new": "VAPTGUARD"
+  },
+
+  "constants": {
+    "simple": [
+      {"from": "VAPTSECURE_VERSION", "to": "VAPTGUARD_VERSION"},
+      {"from": "VAPTSECURE_DATA_VERSION", "to": "VAPTGUARD_DATA_VERSION"},
+      {"from": "VAPTSECURE_PATH", "to": "VAPTGUARD_PATH"},
+      {"from": "VAPTSECURE_URL", "to": "VAPTGUARD_URL"},
+      {"from": "VAPTSECURE_ACTIVE_DATA_FILE", "to": "VAPTGUARD_ACTIVE_DATA_FILE"},
+      {"from": "VAPTSECURE_PATTERN_LIBRARY", "to": "VAPTGUARD_PATTERN_LIBRARY"},
+      {"from": "VAPTSECURE_AI_INSTRUCTIONS", "to": "VAPTGUARD_AI_INSTRUCTIONS"},
+      {"from": "VAPTC_VERSION", "to": "VAPTG_VERSION"},
+      {"from": "VAPTC_PATH", "to": "VAPTG_PATH"},
+      {"from": "VAPTC_URL", "to": "VAPTG_URL"},
+      {"from": "VAPTSECURE_DEBUG", "to": "VAPTGUARD_DEBUG"},
+      {"from": "VAPTSECURE_CONFIG_MISSING", "to": "VAPTGUARD_CONFIG_MISSING"},
+      {"from": "VAPTSECURE_LICENSE_TYPE", "to": "VAPTGUARD_LICENSE_TYPE"},
+      {"from": "VAPTSECURE_LICENSE_SCOPE", "to": "VAPTGUARD_LICENSE_SCOPE"},
+      {"from": "VAPTSECURE_DOMAIN_LIMIT", "to": "VAPTGUARD_DOMAIN_LIMIT"},
+      {"from": "VAPTSECURE_RESTRICT_FEATURES", "to": "VAPTGUARD_RESTRICT_FEATURES"},
+      {"from": "VAPTSECURE_CONFIG_LOADED", "to": "VAPTGUARD_CONFIG_LOADED"},
+      {"from": "VAPTSECURE_EXPECTS_CONFIG", "to": "VAPTGUARD_EXPECTS_CONFIG"},
+      {"from": "VAPTSECURE_BUILD_VERSION", "to": "VAPTGUARD_BUILD_VERSION"}
+    ]
+  },
+
+  "functions": {
+    "prefix_rename": [
+      {"from": "vaptsecure_", "to": "vaptguard_", "note": "function prefix only"},
+      {"from": "is_vaptsecure_superadmin", "to": "is_vaptguard_superadmin"},
+      {"from": "vaptsecure_get_superadmin_identity", "to": "vaptguard_get_superadmin_identity"},
+      {"from": "vaptsecure_is_feature_allowed", "to": "vaptguard_is_feature_allowed"},
+      {"from": "vaptsecure_is_domain_match", "to": "vaptguard_is_domain_match"},
+      {"from": "vaptsecure_load_required_config", "to": "vaptguard_load_required_config"},
+      {"from": "vaptsecure_get_configured_feature_keys", "to": "vaptguard_get_configured_feature_keys"},
+      {"from": "vaptsecure_seed_client_release_features", "to": "vaptguard_seed_client_release_features"},
+      {"from": "vaptsecure_check_requirements", "to": "vaptguard_check_requirements"},
+      {"from": "vaptsecure_enforce_installation_limit", "to": "vaptguard_enforce_installation_limit"},
+      {"from": "vaptsecure_initialize_services", "to": "vaptguard_initialize_services"},
+      {"from": "vaptsecure_activate_plugin", "to": "vaptguard_activate_plugin"},
+      {"from": "vaptsecure_add_admin_menu", "to": "vaptguard_add_admin_menu"},
+      {"from": "vaptsecure_render_client_status_page", "to": "vaptguard_render_client_status_page"},
+      {"from": "vaptsecure_render_workbench_page", "to": "vaptguard_render_workbench_page"},
+      {"from": "vaptsecure_render_admin_page", "to": "vaptguard_render_admin_page"},
+      {"from": "vaptsecure_handle_legacy_redirects", "to": "vaptguard_handle_legacy_redirects"},
+      {"from": "vaptsecure_manual_db_fix", "to": "vaptguard_manual_db_fix"},
+      {"from": "vaptsecure_auto_update_db", "to": "vaptguard_auto_update_db"}
+    ]
+  },
+
+  "classes": {
+    "simple": [
+      {"from": "VAPTSECURE_REST", "to": "VAPTGUARD_REST"},
+      {"from": "VAPTSECURE_Enforcer", "to": "VAPTGUARD_Enforcer"},
+      {"from": "VAPTSECURE_Build", "to": "VAPTGUARD_Build"},
+      {"from": "VAPTSECURE_Admin", "to": "VAPTGUARD_Admin"},
+      {"from": "VAPTSECURE_DB", "to": "VAPTGUARD_DB"},
+      {"from": "VAPTSECURE_Auth", "to": "VAPTGUARD_Auth"},
+      {"from": "VAPTSECURE_License_Manager", "to": "VAPTGUARD_License_Manager"},
+      {"from": "VAPTSECURE_Config_Cleaner", "to": "VAPTGUARD_Config_Cleaner"},
+      {"from": "VAPTSECURE_Environment_Detector", "to": "VAPTGUARD_Environment_Detector"},
+      {"from": "VAPTSECURE_Schema_Validator", "to": "VAPTGUARD_Schema_Validator"},
+      {"from": "VAPTSECURE_Deployment_Orchestrator", "to": "VAPTGUARD_Deployment_Orchestrator"},
+      {"from": "VAPTSECURE_Migrations", "to": "VAPTGUARD_Migrations"},
+      {"from": "VAPTSECURE_AI_Config", "to": "VAPTGUARD_AI_Config"},
+      {"from": "VAPTSECURE_AI_Validator", "to": "VAPTGUARD_AI_Validator"},
+      {"from": "VAPTSECURE_Workflow", "to": "VAPTGUARD_Workflow"},
+      {"from": "VAPTSECURE_Hook_Driver", "to": "VAPTGUARD_Hook_Driver"},
+      {"from": "VAPTSECURE_Apache_Deployer", "to": "VAPTGUARD_Apache_Deployer"},
+      {"from": "VAPTSECURE_Nginx_Driver", "to": "VAPTGUARD_Nginx_Driver"},
+      {"from": "VAPTSECURE_Nginx_Deployer", "to": "VAPTGUARD_Nginx_Deployer"},
+      {"from": "VAPTSECURE_HTACCESS_Driver", "to": "VAPTGUARD_HTACCESS_Driver"},
+      {"from": "VAPTSECURE_PHP_Driver", "to": "VAPTGUARD_PHP_Driver"},
+      {"from": "VAPTSECURE_PHP_Deployer", "to": "VAPTGUARD_PHP_Deployer"},
+      {"from": "VAPTSECURE_Config_Driver", "to": "VAPTGUARD_Config_Driver"},
+      {"from": "VAPTSECURE_Config_Deployer", "to": "VAPTGUARD_Config_Deployer"},
+      {"from": "VAPTSECURE_Caddy_Driver", "to": "VAPTGUARD_Caddy_Driver"},
+      {"from": "VAPTSECURE_IIS_Driver", "to": "VAPTGUARD_IIS_Driver"},
+      {"from": "VAPTSECURE_Driver", "to": "VAPTGUARD_Driver"},
+      {"from": "VAPT_Audit_Log", "to": "VAPTGUARD_Audit_Log"},
+      {"from": "VAPT_Auto_Correct", "to": "VAPTGUARD_Auto_Correct"},
+      {"from": "VAPT_Check_Item", "to": "VAPTGUARD_Check_Item"},
+      {"from": "VAPT_Cron", "to": "VAPTGUARD_Cron"},
+      {"from": "VAPT_Lifecycle", "to": "VAPTGUARD_Lifecycle"},
+      {"from": "VAPT_Self_Check_Result", "to": "VAPTGUARD_Self_Check_Result"},
+      {"from": "VAPT_Self_Check", "to": "VAPTGUARD_Self_Check"}
+    ]
+  },
+
+  "menu_slugs": {
+    "simple": [
+      {"from": "vaptsecure", "to": "vaptguard", "description": "Parent menu slug"},
+      {"from": "vaptsecure-workbench", "to": "vaptguard-workbench", "description": "Workbench page"},
+      {"from": "vaptsecure-domain-admin", "to": "vaptguard-domain-admin", "description": "Domain admin page"}
+    ]
+  },
+
+  "rest_api": {
+    "namespace": {
+      {"from": "vaptsecure/v1", "to": "vaptguard/v1"}
+    },
+    "routes": {
+      "pattern": "vaptsecure/v1/", "replace": "vaptguard/v1/"}
+    }
+  },
+
+  "http_headers": {
+    "simple": [
+      {"from": "x-vapt-enforced", "to": "x-vaptguard-enforced"},
+      {"from": "x-vapt-feature", "to": "x-vaptguard-feature"},
+      {"from": "x-vapt-debug", "to": "x-vaptguard-debug"},
+      {"from": "x-vapt-count", "to": "x-vaptguard-count"},
+      {"from": "x-vapt-trace", "to": "x-vaptguard-trace"}
+    ]
+  },
+
+  "query_params": {
+    "simple": [
+      {"from": "vaptsecure_header_check", "to": "vaptguard_header_check"},
+      {"from": "vaptsecure_test_context", "to": "vaptguard_test_context"},
+      {"from": "vaptsecure_test_spike", "to": "vaptguard_test_spike", "note": "NOT spamp - was typo in instructions"}
+    ]
+  },
+
+  "database_tables": {
+    "simple": [
+      {"from": "wp_vaptsecure_domains", "to": "wp_vaptguard_domains"},
+      {"from": "wp_vaptsecure_domain_features", "to": "wp_vaptguard_domain_features"},
+      {"from": "wp_vaptsecure_feature_status", "to": "wp_vaptguard_feature_status"},
+      {"from": "wp_vaptsecure_feature_meta", "to": "wp_vaptguard_feature_meta"},
+      {"from": "wp_vaptsecure_feature_history", "to": "wp_vaptguard_feature_history"},
+      {"from": "wp_vaptsecure_domain_builds", "to": "wp_vaptguard_domain_builds"},
+      {"from": "wp_vaptsecure_security_events", "to": "wp_vaptguard_security_events"}
+    ]
+  },
+
+  "wordpress_options": {
+    "simple": [
+      {"from": "vaptsecure_version", "to": "vaptguard_version"},
+      {"from": "vaptsecure_active_feature_file", "to": "vaptguard_active_feature_file"},
+      {"from": "vaptsecure_config_original_path", "to": "vaptguard_config_original_path"},
+      {"from": "vaptsecure_config_original_b64", "to": "vaptguard_config_original_b64"},
+      {"from": "vaptsecure_config_original_hash", "to": "vaptguard_config_original_hash"},
+      {"from": "vaptsecure_config_current_b64", "to": "vaptguard_config_current_b64"},
+      {"from": "vaptsecure_config_last_sync", "to": "vaptguard_config_last_sync"},
+      {"from": "vaptsecure_global_protection", "to": "vaptguard_global_protection"},
+      {"from": "vaptsecure_global_protection_prev", "to": "vaptguard_global_protection_prev"},
+      {"from": "vaptsecure_over_installation_limit", "to": "vaptguard_over_installation_limit"},
+      {"from": "vaptsecure_hidden_json_files", "to": "vaptguard_hidden_json_files"},
+      {"from": "vaptsecure_removed_json_files", "to": "vaptguard_removed_json_files"},
+      {"pattern": "vaptsecure_imported_at_", "replace": "vaptguard_imported_at_", "type": "prefix"},
+      {"pattern": "vaptsecure_imported_version_", "replace": "vaptguard_imported_version_", "type": "prefix"},
+      {"pattern": "vaptsecure_last_build_at_", "replace": "vaptguard_last_build_at_", "type": "prefix"},
+      {"pattern": "vaptsecure_client_seeded_", "replace": "vaptguard_client_seeded_", "type": "prefix"}
+    ]
+  },
+
+  "transients": {
+    "simple": [
+      {"from": "vaptsecure_missing_config_notified", "to": "vaptguard_missing_config_notified"},
+      {"from": "vaptsecure_active_enforcements", "to": "vaptguard_active_enforcements"},
+      {"from": "vaptsecure_network_site_count", "to": "vaptguard_network_site_count"},
+      {"pattern": "vaptsecure_otp_email_", "replace": "vaptguard_otp_email_", "type": "prefix"},
+      {"pattern": "vaptsecure_license_cache_", "replace": "vaptguard_license_cache_", "type": "prefix"}
+    ]
+  },
+
+  "javascript_handles": {
+    "wp_enqueue_script": [
+      {"from": "vapt-client-js", "to": "vaptguard-client-js"},
+      {"from": "vapt-workbench-js", "to": "vaptguard-workbench-js"},
+      {"from": "vapt-admin-js", "to": "vaptguard-admin-js"},
+      {"from": "vapt-admin-logger", "to": "vaptguard-admin-logger"},
+      {"from": "vapt-admin-modals", "to": "vaptguard-admin-modals"},
+      {"from": "vapt-admin-field-mapping", "to": "vaptguard-admin-field-mapping"},
+      {"from": "vapt-admin-design-modal", "to": "vaptguard-admin-design-modal"},
+      {"from": "vapt-admin-domains", "to": "vaptguard-admin-domains"},
+      {"from": "vapt-admin-api-fetch-hotpatch", "to": "vaptguard-admin-api-fetch-hotpatch"},
+      {"from": "vapt-interface-generator", "to": "vaptguard-interface-generator"},
+      {"from": "vapt-generated-interface-ui", "to": "vaptguard-generated-interface-ui"}
+    ],
+    "wp_enqueue_style": [
+      {"from": "vapt-admin-css", "to": "vaptguard-admin-css"}
+    ]
+  },
+
+  "javascript_objects": {
+    "window": [
+      {"from": "vaptSecureSettings", "to": "vaptguardSecureSettings"},
+      {"from": "vaptLog", "to": "vaptguardLog"},
+      {"from": "VAPTSECURE_GeneratedInterface", "to": "VAPTGUARD_GeneratedInterface"},
+      {"from": "vapt_GeneratedInterface", "to": "vaptguard_GeneratedInterface"},
+      {"from": "VAPT_Reference", "to": "VAPTGUARD_Reference"}
+    ]
+  },
+
+  "localstorage_keys": {
+    "simple": [
+      {"from": "vaptsecure_workbench_active_status", "to": "vaptguard_workbench_active_status"},
+      {"from": "vaptsecure_workbench_active_feature", "to": "vaptguard_workbench_active_feature"}
+    ]
+  },
+
+  "console_prefix": {
+    "simple": [
+      {"from": "[VAPT]", "to": "[VAPTGuard]"},
+      {"from": "[VAPT Secure]", "to": "[VAPTGuard]"}
+    ]
+  },
+
+  "dom_ids": {
+    "simple": [
+      {"from": "vapt-admin-root", "to": "vaptguard-admin-root"},
+      {"from": "vapt-workbench-root", "to": "vaptguard-workbench-root"},
+      {"from": "vapt-client-root", "to": "vaptguard-client-root"},
+      {"from": "vapt-loading", "to": "vaptguard-loading"}
+    ]
+  },
+
+  "css_classes": {
+    "simple": [
+      {"from": ".vapt-", "to": ".vaptguard-", "type": "prefix"}
+    ],
+    "specific": [
+      ".vapt-batch-revert-modal",
+      ".vapt-dashboard-header",
+      ".vapt-summary-stats",
+      ".vapt-stat-card",
+      ".vapt-version-badge",
+      ".vapt-modal-details",
+      ".vapt-tabs",
+      ".vapt-tab",
+      ".vapt-tab-content",
+      ".vapt-feature-table",
+      ".vapt-auto-renew-toggle",
+      ".vapt-license-grid",
+      ".vapt-license-card",
+      ".vapt-elite-row",
+      ".vapt-status-pill-btn",
+      ".vapt-license-badge",
+      ".vapt-info-row",
+      ".vapt-desc-text",
+      ".vapt-stat-highlight",
+      ".vapt-usage-bar-container",
+      ".vapt-usage-bar-fill",
+      ".vapt-usage-text",
+      ".vapt-correction-controls",
+      ".vapt-domain-features-modal",
+      ".vapt-category-header",
+      ".vapt-feature-grid",
+      ".vapt-sidebar-link",
+      ".vapt-domain-feature-card",
+      ".vapt-status-pill",
+      ".vapt-workbench-link",
+      ".vapt-workbench-root",
+      ".vapt-workbench-sidebar",
+      ".vapt-workbench-list",
+      ".vapt-feature-item",
+      ".vapt-status-badge",
+      ".vapt-implementation-panel",
+      ".vapt-control-panel",
+      ".vapt-protocol-panel",
+      ".vapt-automation-panel"
+    ]
+  },
+
+  "files_to_copy": {
+    "data": [
+      "data/Feature-List-159-Adaptive-Updated.json",
+      "data/interface_schema_v2.0.json",
+      "data/enforcer_pattern_library_v2.0.json",
+      "data/ai_agent_instructions_v2.0.json",
+      "data/vapt_driver_manifest_v2.0.json",
+      "data/VAPT_Driver_Reference_v2.0.php"
+    ],
+    "enforcer_templates": [
+      "data/Enforcers/apache-template.json",
+      "data/Enforcers/caddy-template.json",
+      "data/Enforcers/fail2ban-template.json",
+      "data/Enforcers/htaccess-template.json",
+      "data/Enforcers/nginx-template.json",
+      "data/Enforcers/php-functions-template.json",
+      "data/Enforcers/server-cron-template.json",
+      "data/Enforcers/wordpress-template.json",
+      "data/Enforcers/wp-config-template.json"
+    ],
+    "assets": [
+      "assets/css/admin.css",
+      "assets/js/modules/aplus-generator.js",
+      "assets/js/modules/interface-generator.js",
+      "assets/js/modules/generated-interface.js"
+    ],
+    "admin_js": [
+      "assets/js/admin-modules/domains.js",
+      "assets/js/admin-modules/design-modal.js",
+      "assets/js/admin-modules/field-mapping.js",
+      "assets/js/admin-modules/modals.js",
+      "assets/js/admin-modules/api-fetch-hotpatch.js",
+      "assets/js/admin-modules/logger.js"
+    ]
+  },
+
+  "capabilities": {
+    "simple": [
+      {"from": "vaptsecure", "to": "vaptguard", "description": "menu capability"}
+    ]
+  }
+}
