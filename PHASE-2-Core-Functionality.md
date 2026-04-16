@@ -80,10 +80,10 @@ Features can **transition to Develop** state. Transition modal collects dev_inst
 ### 3.1 REST API Routes
 ```
 // In register_rest_route():
-'vaptsecure/v1'  → 'vaptguard/v1'
+'vaptguard/v1'  → 'vaptguard/v1'
 
-// Full endpoint patterns:
-/wp-json/vaptsecure/v1/*  → /wp-json/vaptguard/v1/*
+// Full endpoint patterns (FQDN):
+https://{SITE_DOMAIN}/wp-json/vaptguard/v1/*
 ```
 
 ### 3.2 HTTP Headers
@@ -199,14 +199,12 @@ $wpdb->update($status_table,
 
 ## Test Criteria (Phase 2)
 
-- [ ] REST API responds at `/wp-json/vaptguard/v1/status`
+- [ ] REST API responds at `https://{SITE_DOMAIN}/wp-json/vaptguard/v1/status`
 - [ ] Feature endpoints work (`/features`, `/features/update`)
 - [ ] Domain endpoints work (`/domains`)
 - [ ] License endpoints work (`/license`)
 - [ ] File upload works (`/upload-media`)
-- [ ] Authentication works:
-  - [ ] Superadmin identity check (`is_vaptguard_superadmin()`)
-  - [ ] OTP flow functional
+- [ ] Superadmin identity check works (`is_vaptguard_superadmin()`)
 - [ ] Options save/retrieve correctly
 - [ ] Transition modal displays:
   - [ ] Draft → Develop modal shows
@@ -218,11 +216,15 @@ $wpdb->update($status_table,
   - [ ] Status changes to 'Develop'
 - [ ] JavaScript loads without errors
 
+**Note**: OTP authentication is Phase 3. Phase 2 uses basic identity check only.
+
 ---
 
 ## Exit Gate
 
-> Phase 2 COMPLETE when: REST API functional, authentication works, transition modal works, features can transition to Develop state
+> Phase 2 COMPLETE when: REST API functional, identity check works, transition modal works, features can transition to Develop state
+> 
+> **Note**: Full OTP authentication is Phase 3 scope.
 
 ---
 
