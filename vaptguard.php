@@ -4,7 +4,7 @@
  * Plugin Name: VAPTGuard Pro
  * Plugin URI: https://vaptguard.com/
  * Description: WordPress Security SaaS Platform - Dual interface security plugin with feature builder
- * Version: 1.0.1
+ * Version: 1.0.2
  * Author: Tanveer H. Malik
  * Author URI: https://vaptguard.com/
  * License: GPLv2 or later
@@ -58,7 +58,7 @@ if (false) {
 if (defined('VAPTGUARD_BUILD_VERSION')) {
     define('VAPTGUARD_VERSION', VAPTGUARD_BUILD_VERSION);
 } else {
-    define('VAPTGUARD_VERSION', '1.0.1');
+    define('VAPTGUARD_VERSION', '1.0.2');
 }
 if (! defined('VAPTGUARD_DATA_VERSION')) {
     define('VAPTGUARD_DATA_VERSION', '1.0.0');
@@ -170,14 +170,19 @@ function vaptguard_is_feature_allowed($feature_key)
     return defined($const_name) && constant($const_name) === true;
 }
 
-// Include core classes (Phase 1 - minimal includes)
+// Phase 1: Core includes
+require_once VAPTGUARD_PATH . 'includes/debug-utils.php';
 require_once VAPTGUARD_PATH . 'includes/class-vaptguard-auth.php';
-
-// Phase 1: Driver Interface Contract - Load interface before drivers
 require_once VAPTGUARD_PATH . 'includes/interfaces/interface-vaptguard-driver.php';
-
-// Phase 1: DB Handler
 require_once VAPTGUARD_PATH . 'includes/class-vaptguard-db.php';
+
+// Phase 2: REST API, Admin, License, Config, Environment
+require_once VAPTGUARD_PATH . 'includes/rest/class-vaptguard-rest-base.php';
+require_once VAPTGUARD_PATH . 'includes/class-vaptguard-config-cleaner.php';
+require_once VAPTGUARD_PATH . 'includes/class-vaptguard-environment-detector.php';
+require_once VAPTGUARD_PATH . 'includes/class-vaptguard-license-manager.php';
+require_once VAPTGUARD_PATH . 'includes/class-vaptguard-admin.php';
+require_once VAPTGUARD_PATH . 'includes/class-vaptguard-rest.php';
 
 /**
  * Instantiate service objects on plugins_loaded so their constructors can hook into WP.
@@ -190,8 +195,16 @@ add_action('plugins_loaded', 'vaptguard_initialize_services');
 function vaptguard_initialize_services()
 {
     if (class_exists('VAPTGUARD_Auth')) {
-        // Auth may provide static helpers but instantiate to register hooks if needed
         new VAPTGUARD_Auth();
+    }
+    if (class_exists('VAPTGUARD_REST')) {
+        new VAPTGUARD_REST();
+    }
+    if (class_exists('VAPTGUARD_Admin')) {
+        new VAPTGUARD_Admin();
+    }
+    if (class_exists('VAPTGUARD_License_Manager')) {
+        VAPTGUARD_License_Manager::init();
     }
 }
 
@@ -358,19 +371,15 @@ function vaptguard_load_features_from_json()
     $status_table = $wpdb->prefix . 'vaptguard_feature_status';
     $meta_table = $wpdb->prefix . 'vaptguard_feature_meta';
     
-    // Extract features from the new JSON structure
+    // Extract features from _index.by_risk_id
     $features = array();
     
-    // Check if data has 'risks' key (new structure)
-    if (isset($features_data['risks']) && is_array($features_data['risks'])) {
-        foreach ($features_data['risks'] as $risk) {
-            if (isset($risk['id'])) {
-                $features[$risk['id']] = array(
-                    'category' => isset($risk['category']) ? $risk['category'] : 'General',
-                    'title' => isset($risk['title']) ? $risk['title'] : '',
-                    'description' => isset($risk['description']) ? $risk['description'] : ''
-                );
-            }
+    if (isset($features_data['_index']['by_risk_id']) && is_array($features_data['_index']['by_risk_id'])) {
+        foreach ($features_data['_index']['by_risk_id'] as $risk_id => $feature_key) {
+            $features[$feature_key] = array(
+                'category' => 'General',
+                'risk_id' => $risk_id
+            );
         }
     }
     
@@ -624,7 +633,7 @@ if (! function_exists('vaptguard_render_client_status_page')) {
         <div style="padding: 40px; text-align: center; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 4px;">
           <p><?php _e('VAPTGuard Pro is active. Features are loaded in Draft state.', 'vaptguard'); ?></p>
           <p><?php _e('Total Features: 159', 'vaptguard'); ?></p>
-          <p><?php _e('Phase 1: Core Foundation - Complete', 'vaptguard'); ?></p>
+          <p><?php _e('Phase 2: Core Functionality - Active', 'vaptguard'); ?></p>
         </div>
       </div>
     </div>
@@ -655,12 +664,55 @@ if (! function_exists('vaptguard_render_workbench_page')) {
       <h1 class="wp-heading-inline"><?php _e('VAPTGuard Pro Workbench', 'vaptguard'); ?></h1>
       <hr class="wp-header-end" />
       <div id="vapt-workbench-root">
-        <div style="padding: 40px; text-align: center; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 4px;">
-          <p><?php _e('VAPTGuard Pro Workbench - Phase 1', 'vaptguard'); ?></p>
-          <p><?php _e('159 features loaded in Draft state.', 'vaptguard'); ?></p>
+        <div style="padding: 40px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 4px;">
+          <p><?php _e('VAPTGuard Pro Workbench - Phase 2', 'vaptguard'); ?></p>
+          <p><?php _e('REST API: /wp-json/vaptguard/v1/', 'vaptguard'); ?></p>
+          <p><?php _e('Features can now be transitioned Draft → Develop.', 'vaptguard'); ?></p>
         </div>
       </div>
     </div>
+
+    <!-- Transition Modal: Draft → Develop -->
+    <div id="vaptguard-transition-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:99999; justify-content:center; align-items:center;">
+      <div style="background:#fff; border-radius:6px; padding:30px; max-width:560px; width:90%; box-shadow:0 4px 20px rgba(0,0,0,0.3);">
+        <h2 class="vaptguard-modal-title" style="margin-top:0;"><?php _e('Transition to Develop', 'vaptguard'); ?></h2>
+        <p style="color:#666;"><?php _e('Provide context for development. Only the internal note is required.', 'vaptguard'); ?></p>
+        <div style="margin-bottom:15px;">
+          <label style="display:block; font-weight:600; margin-bottom:4px;"><?php _e('Internal Note (required)', 'vaptguard'); ?></label>
+          <textarea id="vaptguard-transition-note" rows="3" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;" placeholder="<?php _e('Describe why this feature is being moved to development...', 'vaptguard'); ?>"></textarea>
+        </div>
+        <div style="margin-bottom:15px;">
+          <label style="display:block; font-weight:600; margin-bottom:4px;"><?php _e('Development Instructions / AI Guidance (optional)', 'vaptguard'); ?></label>
+          <textarea id="vaptguard-transition-dev-instruct" rows="4" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;" placeholder="<?php _e('AI prompt or detailed dev instructions...', 'vaptguard'); ?>"></textarea>
+        </div>
+        <div style="margin-bottom:20px;">
+          <label style="display:block; font-weight:600; margin-bottom:4px;"><?php _e('Wireframe / Design URL (optional)', 'vaptguard'); ?></label>
+          <input type="url" id="vaptguard-transition-wireframe" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;" placeholder="https://" />
+        </div>
+        <div style="display:flex; gap:10px; justify-content:flex-end;">
+          <button onclick="document.getElementById('vaptguard-transition-modal').style.display='none';" style="padding:8px 16px; background:#f0f0f0; border:1px solid #ccc; border-radius:4px; cursor:pointer;"><?php _e('Cancel', 'vaptguard'); ?></button>
+          <button id="vaptguard-transition-confirm" style="padding:8px 20px; background:#0073aa; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:600;"><?php _e('Confirm to Develop', 'vaptguard'); ?></button>
+        </div>
+      </div>
+    </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var confirmBtn = document.getElementById('vaptguard-transition-confirm');
+        if (!confirmBtn) return;
+        confirmBtn.addEventListener('click', function() {
+            var note = document.getElementById('vaptguard-transition-note').value.trim();
+            if (!note) { alert('<?php _e('Internal note is required.', 'vaptguard'); ?>'); return; }
+            if (window.VAPTGuardDesignModal) {
+                var devInstruct = document.getElementById('vaptguard-transition-dev-instruct').value;
+                var wireframe  = document.getElementById('vaptguard-transition-wireframe').value;
+                VAPTGuardDesignModal.submit(note, devInstruct, wireframe,
+                    function(r) { alert('<?php _e('Feature transitioned to Develop.', 'vaptguard'); ?>'); location.reload(); },
+                    function(e) { alert('<?php _e('Error: ', 'vaptguard'); ?>' + (e.message || JSON.stringify(e))); }
+                );
+            }
+        });
+    });
+    </script>
         <?php
     }
 }
@@ -694,8 +746,8 @@ if (! function_exists('vaptguard_master_dashboard_page')) {
     <div id="vapt-admin-root" class="wrap">
       <h1><?php _e('VAPTGuard Pro Domain Admin', 'vaptguard'); ?></h1>
       <div style="padding: 20px; text-align: center;">
-        <p><?php _e('VAPTGuard Pro Domain Admin - Phase 1', 'vaptguard'); ?></p>
-        <p><?php _e('159 features loaded in Draft state.', 'vaptguard'); ?></p>
+        <p><?php _e('VAPTGuard Pro Domain Admin - Phase 2', 'vaptguard'); ?></p>
+        <p><?php _e('REST API: /wp-json/vaptguard/v1/domains', 'vaptguard'); ?></p>
       </div>
     </div>
         <?php

@@ -1,5 +1,18 @@
 # VAPTGuard Pro - Master Implementation Index
 
+## FQDN Architecture
+
+All URLs in this implementation must use Fully Qualified Domain Name (FQDN) format:
+
+| Type | Format | Example |
+|------|--------|---------|
+| REST API | `https://{SITE_DOMAIN}/wp-json/vaptguard/v1/*` | `https://example.com/wp-json/vaptguard/v1/features` |
+| Admin Pages | `https://{SITE_DOMAIN}/wp-admin/admin.php?page=*` | `https://example.com/wp-admin/admin.php?page=vaptguard-workbench` |
+| Plugin URI | `https://vaptguard.com/` | - |
+| Author URI | `https://vaptguard.com/` | - |
+
+**Note**: Replace `{SITE_DOMAIN}` with actual domain when testing.
+
 ## Quick Reference
 
 | Phase | Name | Goal | Exit Criteria |

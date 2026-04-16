@@ -131,7 +131,7 @@ When a feature is in **Test** state:
 
 ## Test Criteria (Phase 3)
 
-- [ ] Workbench loads at `/wp-admin/admin.php?page=vaptguard-workbench`
+- [ ] Workbench loads at `https://{SITE_DOMAIN}/wp-admin/admin.php?page=vaptguard-workbench`
 - [ ] All 159 features display:
   - [ ] Status badges show (Draft/Develop/Test/Release)
   - [ ] Feature list sortable

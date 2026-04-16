@@ -5,6 +5,18 @@ Clone VAPTSecure Clean as a fully functional independent plugin "VAPTGuard Pro" 
 
 ---
 
+## FQDN Architecture
+
+All URLs must use Fully Qualified Domain Name (FQDN) format:
+
+| Type | Format |
+|------|--------|
+| REST API | `https://{SITE_DOMAIN}/wp-json/vaptguard/v1/*` |
+| Admin Pages | `https://{SITE_DOMAIN}/wp-admin/admin.php?page=*` |
+| Plugin/Author URI | `https://vaptguard.com/` |
+
+---
+
 ## PART 1: FEATURE LIFECYCLE (4 States)
 
 ```
@@ -161,7 +173,7 @@ if ($screen->id === 'toplevel_page_vaptguard-domain-admin') {
 
 | Original | New |
 |----------|-----|
-| /wp-json/vaptsecure/v1/ | /wp-json/vaptguard/v1/ |
+| /wp-json/vaptsecure/v1/ | https://{SITE_DOMAIN}/wp-json/vaptguard/v1/ |
 
 ### Constants
 
@@ -303,7 +315,7 @@ if ($screen->id === 'toplevel_page_vaptguard-domain-admin') {
 
 ### CHUNK 2: DEVELOP Stage - REST API & Core Functions
 
-**Purpose**: API, authentication, options, transition to Develop
+**Purpose**: API, identity check, options, transition to Develop
 
 **Deliverables**:
 - `class-vaptguard-rest.php` - REST API handler
@@ -311,12 +323,15 @@ if ($screen->id === 'toplevel_page_vaptguard-domain-admin') {
 - `class-vaptguard-license-manager.php` - License system
 - `class-vaptguard-config-cleaner.php` - Config utilities
 - `assets/js/admin-modules/` - Admin JS modules
+- `class-vaptguard-auth.php` - Basic identity check (OTP in Phase 3)
 
 **Test Criteria**:
-- [ ] REST API responds at `/wp-json/vaptguard/v1/`
-- [ ] Authentication works
+- [ ] REST API responds at `https://{SITE_DOMAIN}/wp-json/vaptguard/v1/`
+- [ ] Identity check works (is_vaptguard_superadmin)
 - [ ] Transition modal works (Draft → Develop)
 - [ ] dev_instruct, wireframe_url saved
+
+**Note**: Full OTP authentication is Phase 3 scope.
 
 ### CHUNK 3: TEST Stage - Workbench & State Transitions
 
