@@ -278,3 +278,5 @@ class VAPTGUARD_Config_Cleaner
         return false;
     }
 }
+
+

@@ -60,3 +60,5 @@ class VAPTGUARD_Auth
         // Phase 2: Output OTP form HTML
     }
 }
+
+

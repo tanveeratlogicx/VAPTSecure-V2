@@ -4,7 +4,7 @@
  * Plugin Name: VAPTGuard Pro
  * Plugin URI: https://vaptguard.com/
  * Description: WordPress Security SaaS Platform - Dual interface security plugin with feature builder
- * Version: 1.0.2
+ * Version: 1.0.3
  * Author: Tanveer H. Malik
  * Author URI: https://vaptguard.com/
  * License: GPLv2 or later
@@ -58,7 +58,7 @@ if (false) {
 if (defined('VAPTGUARD_BUILD_VERSION')) {
     define('VAPTGUARD_VERSION', VAPTGUARD_BUILD_VERSION);
 } else {
-    define('VAPTGUARD_VERSION', '1.0.2');
+    define('VAPTGUARD_VERSION', '1.0.3');
 }
 if (! defined('VAPTGUARD_DATA_VERSION')) {
     define('VAPTGUARD_DATA_VERSION', '1.0.0');
@@ -746,8 +746,8 @@ if (! function_exists('vaptguard_master_dashboard_page')) {
     <div id="vapt-admin-root" class="wrap">
       <h1><?php _e('VAPTGuard Pro Domain Admin', 'vaptguard'); ?></h1>
       <div style="padding: 20px; text-align: center;">
-        <p><?php _e('VAPTGuard Pro Domain Admin - Phase 2', 'vaptguard'); ?></p>
-        <p><?php _e('REST API: /wp-json/vaptguard/v1/domains', 'vaptguard'); ?></p>
+        <span class="spinner is-active" style="float: none; margin: 0 auto;"></span>
+        <p><?php _e('Loading VAPTGuard...', 'vaptguard'); ?></p>
       </div>
     </div>
         <?php
@@ -755,13 +755,10 @@ if (! function_exists('vaptguard_master_dashboard_page')) {
 }
 
 /**
- * Enqueue Admin Assets
+ * Enqueue Assets for React App
  */
 add_action('admin_enqueue_scripts', 'vaptguard_enqueue_admin_assets');
 
-/**
- * Enqueue Assets for React App
- */
 function vaptguard_enqueue_admin_assets($hook)
 {
     $screen = get_current_screen();
@@ -769,6 +766,73 @@ function vaptguard_enqueue_admin_assets($hook)
     if (!$screen) { return;
     }
     
+    // Enqueue Shared Styles
+    wp_enqueue_style('vaptguard-admin-css', VAPTGUARD_URL . 'assets/css/admin.css', array('wp-components'), VAPTGUARD_VERSION);
+
+    // 1. Superadmin Dashboard (admin.js)
+    if ($screen->id === 'toplevel_page_vaptguard-domain-admin' || $screen->id === 'vaptguard_page_vaptguard-domain-admin' || strpos($screen->id, 'vaptguard-domain-admin') !== false) {
+        // Enqueue Auto-Interface Generator (Module)
+        wp_enqueue_script(
+            'vaptguard-interface-generator',
+            VAPTGUARD_URL . 'assets/js/modules/interface-generator.js',
+            array(),
+            VAPTGUARD_VERSION,
+            true
+        );
+        // Enqueue Generated Interface UI Component
+        wp_enqueue_script(
+            'vaptguard-generated-interface-ui',
+            VAPTGUARD_URL . 'assets/js/modules/generated-interface.js',
+            array('wp-element', 'wp-components', 'wp-i18n'),
+            VAPTGUARD_VERSION,
+            true
+        );
+        // Enqueue Admin Dashboard Script
+        wp_enqueue_script(
+            'vaptguard-admin-js',
+            VAPTGUARD_URL . 'assets/js/admin.js',
+            array('wp-element', 'wp-components', 'wp-api-fetch', 'wp-i18n', 'vaptguard-interface-generator', 'vaptguard-generated-interface-ui'),
+            VAPTGUARD_VERSION,
+            true
+        );
+    }
+
+    // 2. Client Status Page (client.js)
+    if ($screen->id === 'toplevel_page_vaptguard') {
+        wp_enqueue_script(
+            'vaptguard-client-js',
+            VAPTGUARD_URL . 'assets/js/client.js',
+            array('wp-element', 'wp-components', 'wp-api-fetch', 'wp-i18n'),
+            VAPTGUARD_VERSION,
+            true
+        );
+    }
+
+    // 3. Workbench Page (workbench.js)
+    if ($screen->id === 'vaptguard_page_vaptguard-workbench' || strpos($screen->id, 'vaptguard-workbench') !== false) {
+        wp_enqueue_script(
+            'vaptguard-interface-generator',
+            VAPTGUARD_URL . 'assets/js/modules/interface-generator.js',
+            array(),
+            VAPTGUARD_VERSION,
+            true
+        );
+        wp_enqueue_script(
+            'vaptguard-generated-interface-ui',
+            VAPTGUARD_URL . 'assets/js/modules/generated-interface.js',
+            array('wp-element', 'wp-components', 'wp-i18n'),
+            VAPTGUARD_VERSION,
+            true
+        );
+        wp_enqueue_script(
+            'vaptguard-workbench-js',
+            VAPTGUARD_URL . 'assets/js/workbench.js',
+            array('wp-element', 'wp-components', 'wp-api-fetch', 'wp-i18n', 'vaptguard-interface-generator', 'vaptguard-generated-interface-ui'),
+            VAPTGUARD_VERSION,
+            true
+        );
+    }
+
     // Common Settings Localization
     $vapt_settings = array(
         'isSuper' => $is_superadmin,
@@ -778,6 +842,21 @@ function vaptguard_enqueue_admin_assets($hook)
         'abspath' => ABSPATH,
         'pluginPath' => VAPTGUARD_PATH,
         'uploadPath' => wp_upload_dir()['basedir'],
+        'root' => esc_url_raw(rest_url()),
+        'nonce' => wp_create_nonce('wp_rest'),
+        'domainLocked' => defined('VAPTGUARD_DOMAIN_LOCKED') ? VAPTGUARD_DOMAIN_LOCKED : false,
+        'buildVersion' => VAPTGUARD_VERSION,
+        'activeData' => VAPTGUARD_ACTIVE_DATA_FILE
     );
+
+    // Localize settings for all VAPTGuard pages
+    if (in_array($screen->id, array(
+        'toplevel_page_vaptguard',
+        'toplevel_page_vaptguard-domain-admin',
+        'vaptguard_page_vaptguard-workbench',
+        'vaptguard_page_vaptguard-domain-admin'
+    )) || strpos($screen->id, 'vaptguard') !== false) {
+        wp_localize_script('vaptguard-admin-js', 'vaptguardSettings', $vapt_settings);
+    }
 }
 ?>

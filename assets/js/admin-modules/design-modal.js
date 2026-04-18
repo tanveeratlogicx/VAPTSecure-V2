@@ -23,7 +23,7 @@ window.VAPTGuardDesignModal = window.VAPTGuardDesignModal || {
             if (typeof onError === 'function') onError('No feature selected');
             return;
         }
-        var settings = window.vaptguardSecureSettings || {};
+        var settings = window.vaptguardSettings || {};
         wp.apiFetch({
             path: '/vaptguard/v1/features/transition',
             method: 'POST',

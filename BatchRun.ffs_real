@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FreeFileSync XmlType="REAL" XmlFormat="2">
+    <Directories>
+        <Item>G:\My Drive\local_sites\vaptsecurev2\app\public\wp-content\plugins\VAPTSecureV2</Item>
+        <Item>G:\My Drive\laragon_data\VAPTBuilder\wp-content\plugins\VAPTSecureV2</Item>
+    </Directories>
+    <Delay>10</Delay>
+    <Commandline>"G:\My Drive\laragon_data\VAPTBuilder\wp-content\plugins\BatchRun.ffs_batch"</Commandline>
+</FreeFileSync>

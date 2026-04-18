@@ -53,3 +53,4 @@ if (!function_exists('vaptguard_warning')) {
 if (!function_exists('vaptguard_error')) {
     function vaptguard_error($message, $data = null) { vaptguard_log($message, 'error', $data); }
 }
+

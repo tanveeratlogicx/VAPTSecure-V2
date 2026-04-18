@@ -1,0 +1,1683 @@
+/* Batch Revert to Draft - Modal */
+.vapt-batch-revert-modal {
+    min-height: fit-content;
+}
+
+/* VAPT CoPilot Admin Styles */
+
+.vapt-dashboard-header {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.vapt-summary-stats {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.vapt-stat-card {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    padding: 15px;
+    flex: 1;
+    text-align: center;
+}
+
+.vapt-stat-card h3 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    text-transform: uppercase;
+    color: #666;
+}
+
+.vapt-version-badge {
+    display: inline-block;
+    background: #2271b1;
+    color: #fff;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    vertical-align: middle;
+    margin-left: 10px;
+    font-weight: 500;
+}
+
+
+.vapt-modal-details strong {
+    display: inline-block;
+    min-width: 120px;
+}
+
+.vapt-tabs {
+    border-bottom: 1px solid #ccc;
+    margin-bottom: 20px;
+}
+
+.vapt-tab {
+    display: inline-block;
+    padding: 10px 15px;
+    background: #f1f1f1;
+    border: 1px solid #ccc;
+    border-bottom: none;
+    border-radius: 4px 4px 0 0;
+    margin-right: 5px;
+    cursor: pointer;
+    text-decoration: none;
+    color: #333;
+}
+
+.vapt-tab.active {
+    background: #fff;
+    border-bottom: 1px solid #fff;
+    position: relative;
+    bottom: -1px;
+}
+
+.vapt-tab-content {
+    display: none;
+}
+
+.vapt-tab-content.active {
+    display: block;
+}
+
+.vapt-feature-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    margin-bottom: 20px;
+}
+
+.vapt-feature-table th,
+.vapt-feature-table td {
+    padding: 4px 12px;
+    border: 1px solid #e2e8f0;
+    text-align: left;
+    vertical-align: middle !important;
+}
+
+.vapt-feature-table th {
+    background: #f8fafc;
+    font-weight: 600;
+    color: #475569;
+}
+
+.vapt-feature-table tbody tr:nth-child(odd) {
+    background-color: #ffffff !important;
+}
+
+.vapt-feature-table tbody tr:nth-child(even) {
+    background-color: #f5f5f5 !important;
+}
+
+.vapt-feature-table tbody tr:hover {
+    background-color: #e8e8e8 !important;
+}
+
+.severity-pill {
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    border: 1px solid transparent;
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+}
+
+.severity-pill.critical {
+    background: #FEE2E2 !important;
+    color: #991B1B !important;
+    border-color: #F87171 !important;
+}
+
+.severity-pill.high {
+    background: #FFEDD5 !important;
+    color: #9A3412 !important;
+    border-color: #FB923C !important;
+}
+
+.severity-pill.medium {
+    background: #DBEAFE !important;
+    color: #1E40AF !important;
+    border-color: #60A5FA !important;
+}
+
+.severity-pill.low {
+    background: #F1F5F9 !important;
+    color: #475569 !important;
+    border-color: #CBD5E1 !important;
+}
+
+/* Toggle Colors for Premium Look */
+.components-form-toggle:not(.is-checked) .components-form-toggle__track {
+    background-color: #cbd5e1 !important;
+    /* Darker grey for inactive */
+    border-color: #94a3b8 !important;
+}
+
+.components-form-toggle:not(.is-checked) .components-form-toggle__thumb {
+    background-color: #f8fafc !important;
+}
+
+.components-form-toggle.is-checked .components-form-toggle__track {
+    background-color: #2271b1 !important;
+    border-color: #1e5f96 !important;
+}
+
+.components-form-toggle.is-checked .components-form-toggle__thumb {
+    background-color: #ffffff !important;
+}
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 20px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 20px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+.toggle-switch input:checked+.toggle-slider {
+    background-color: #0073aa;
+}
+
+.toggle-switch input:checked+.toggle-slider:before {
+    transform: translateX(20px);
+}
+
+.upload-area {
+    border: 2px dashed #ccc;
+    border-radius: 4px;
+    padding: 30px;
+    text-align: center;
+    margin-bottom: 20px;
+    background: #f8f9fa;
+}
+
+.upload-area:hover {
+    border-color: #0073aa;
+}
+
+.hidden {
+    display: none;
+}
+
+.hidden {
+    display: none;
+}
+
+/* License Management Styles */
+.vapt-license-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    align-items: stretch;
+}
+
+.vapt-license-card {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.85));
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(203, 213, 225, 0.5);
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.vapt-license-card:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+    transform: translateY(-2px);
+    border-color: rgba(148, 163, 184, 0.4);
+}
+
+.vapt-license-card h3 {
+    margin-top: 0;
+    margin-bottom: 25px;
+    font-size: 1.15em;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+    /* padding-bottom: 12px; */
+    color: #1e293b;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+/* Elite Table Cell Styling */
+.vapt-elite-row td {
+    border-bottom: 1px solid #f1f5f9 !important;
+    padding: 12px 15px !important;
+    vertical-align: middle !important;
+    color: #334155;
+}
+
+.vapt-elite-row:hover {
+    background-color: #f8fafc !important;
+    box-shadow: inset 4px 0 0 #3b82f6;
+}
+
+.vapt-elite-row.is-selected {
+    background-color: #eff6ff !important;
+    box-shadow: inset 4px 0 0 #2563eb;
+}
+
+/* Premium Status Pill Button */
+.vapt-status-pill-btn {
+    border-radius: 20px !important;
+    padding: 4px 12px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    height: 24px !important;
+    border: 1px solid transparent !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    cursor: pointer !important;
+}
+
+.vapt-status-pill-btn.active {
+    background: #dcfce7 !important;
+    color: #15803d !important;
+    border-color: #bbf7d0 !important;
+}
+
+.vapt-status-pill-btn.active:hover {
+    background: #bbf7d0 !important;
+    box-shadow: 0 0 10px rgba(22, 163, 74, 0.2);
+}
+
+.vapt-status-pill-btn.inactive {
+    background: #fff7ed !important;
+    color: #c2410c !important;
+    border-color: #ffedd5 !important;
+}
+
+.vapt-status-pill-btn.inactive:hover {
+    background: #ffedd5 !important;
+    box-shadow: 0 0 10px rgba(194, 65, 12, 0.15);
+}
+
+.vapt-status-pill-btn .dashicons {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    line-height: inherit;
+}
+
+/* Refined Badges */
+.vapt-license-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    line-height: 1.5;
+}
+
+.vapt-license-badge.standard {
+    background: linear-gradient(135deg, hsl(210, 20%, 96%), hsl(210, 20%, 90%));
+    color: hsl(215, 15%, 40%);
+    border: 1px solid hsl(210, 20%, 85%);
+}
+
+.vapt-license-badge.pro {
+    background: linear-gradient(135deg, hsl(214, 100%, 96%), hsl(214, 100%, 90%));
+    color: hsl(221, 83%, 35%);
+    border: 1px solid hsl(214, 100%, 85%);
+}
+
+.vapt-license-badge.developer {
+    background: linear-gradient(135deg, hsl(270, 100%, 96%), hsl(270, 100%, 90%));
+    color: hsl(273, 67%, 30%);
+    border: 1px solid hsl(270, 100%, 85%);
+}
+
+.vapt-info-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    font-size: 13px;
+    border-bottom: 1px dashed #e2e8f0;
+    padding-bottom: 10px;
+}
+
+.vapt-info-row label {
+    color: #475569;
+    font-weight: 500;
+}
+
+.vapt-info-row span {
+    font-weight: 600;
+    color: #0f172a;
+}
+
+.vapt-desc-text {
+    margin-top: 20px;
+    font-size: 13px;
+    color: #475569;
+    line-height: 1.5;
+    background: rgba(241, 245, 249, 0.7);
+    padding: 12px 16px;
+    border-left: 4px solid #3b82f6;
+    border-radius: 0 6px 6px 0;
+}
+
+/* Featured Stat Box for Prominence */
+.vapt-stat-highlight {
+    background: linear-gradient(to right, #f0f6fc, #e0f2fe);
+    border: 1px solid #bae6fd;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.5);
+}
+
+.vapt-stat-highlight label {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #0284c7;
+    margin-bottom: 6px;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+}
+
+.vapt-stat-highlight span {
+    font-size: 20px;
+    font-weight: 800;
+    color: #0c4a6e;
+    display: block;
+}
+
+/* Usage Progress Bar */
+.vapt-usage-bar-container {
+    width: 100%;
+    background-color: #e2e8f0;
+    border-radius: 9999px;
+    height: 6px;
+    overflow: hidden;
+    margin-top: 6px;
+}
+
+.vapt-usage-bar-fill {
+    height: 100%;
+    border-radius: 9999px;
+    transition: width 0.5s ease-in-out, background-color 0.3s ease;
+}
+
+.vapt-usage-bar-fill.safe {
+    background: linear-gradient(90deg, #34d399, #10b981);
+}
+
+.vapt-usage-bar-fill.warning {
+    background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+
+.vapt-usage-bar-fill.danger {
+    background: linear-gradient(90deg, #f87171, #ef4444);
+}
+
+.vapt-usage-text {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+    margin-top: 4px;
+}
+
+@media (max-width: 782px) {
+    .vapt-license-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+/* Correction Controls */
+.vapt-correction-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-left: 10px;
+}
+
+.vapt-correction-controls button.is-link {
+    font-size: 11px;
+    height: auto !important;
+    padding: 0 !important;
+    min-height: max-content !important;
+    text-decoration: underline;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    box-shadow: none;
+}
+
+.vapt-correction-controls button.is-link.is-destructive {
+    color: #d63638;
+}
+
+.vapt-correction-controls button.is-link:not(.is-destructive) {
+    color: #2271b1;
+}
+
+/* Domain Features UI Enhancements */
+.vapt-domain-features-modal .components-modal__content {
+    padding: 0 !important;
+    overflow: hidden !important;
+}
+
+.vapt-domain-features-modal .components-modal__header {
+    border-bottom: 1px solid #e2e8f0;
+    margin-bottom: 0 !important;
+    padding: 15px 25px !important;
+    background: #fff;
+}
+
+.vapt-domain-features-modal .components-modal__header h1 {
+    font-size: 1.25rem !important;
+    font-weight: 700 !important;
+    color: #1e293b !important;
+}
+
+.vapt-category-header {
+    margin: 30px 0 15px 0 !important;
+    padding: 10px 15px !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    color: #475569 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: linear-gradient(to right, #f8fafc, transparent);
+    border-left: 4px solid #2271b1;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.vapt-category-header:first-child {
+    margin-top: 5px !important;
+}
+
+.vapt-feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 25px;
+    margin-bottom: 40px;
+}
+
+.vapt-sidebar-link {
+    position: relative;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.vapt-sidebar-link:hover:not(.is-active) {
+    background: #f1f5f9 !important;
+    color: #1e293b !important;
+}
+
+.vapt-sidebar-link.is-active {
+    background: #eff6ff !important;
+    color: #2271b1 !important;
+}
+
+.vapt-sidebar-link.is-active::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: #2271b1;
+}
+
+.vapt-domain-feature-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+.vapt-domain-feature-card:hover {
+    border-color: #2271b1 !important;
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px -6px rgba(0, 0, 0, 0.1), 0 8px 16px -4px rgba(0, 0, 0, 0.06) !important;
+}
+
+.vapt-status-pill {
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+}
+
+.vapt-status-pill.status-release,
+.vapt-status-pill.status-implemented {
+    background: #dcfce7 !important;
+    color: #15803d !important;
+    border: 1px solid #bbf7d0 !important;
+}
+
+.vapt-status-pill.status-test {
+    background: #eff6ff !important;
+    color: #1d4ed8 !important;
+    border: 1px solid #dbeafe !important;
+}
+
+.vapt-status-pill.status-develop {
+    background: #fef2f2 !important;
+    color: #b91c1c !important;
+    border: 1px solid #fee2e2 !important;
+}
+
+.vapt-status-pill.status-draft {
+    background: #f8fafc !important;
+    color: #64748b !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+.vapt-workbench-link {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border-left: 3px solid transparent;
+    text-decoration: none !important;
+    display: block;
+    position: relative;
+    z-index: 1;
+}
+
+.vapt-workbench-link:hover {
+    background: #fff !important;
+    color: #2271b1 !important;
+    padding-left: 25px !important;
+    border-left: 3px solid #2271b1 !important;
+    width: max-content;
+    min-width: 100%;
+    box-shadow: 15px 0 25px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    white-space: nowrap !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    position: relative;
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+}
+
+/* Ensure the sidebar doesn't clip the expanded links entirely */
+.vapt-workbench-root .vapt-workbench-sidebar {
+    overflow-x: visible !important;
+}
+
+/* Custom Scrollbars */
+.vapt-domain-features-modal *::-webkit-scrollbar,
+.vapt-workbench-root *::-webkit-scrollbar {
+    width: 10px;
+}
+
+.vapt-domain-features-modal *::-webkit-scrollbar-track,
+.vapt-workbench-root *::-webkit-scrollbar-track {
+    background: #f8fafc;
+}
+
+.vapt-domain-features-modal *::-webkit-scrollbar-thumb,
+.vapt-workbench-root *::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 5px;
+    border: 3px solid #f8fafc;
+}
+
+.vapt-domain-features-modal *::-webkit-scrollbar-thumb:hover,
+.vapt-workbench-root *::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Enhanced Tab Styling */
+.vapt-main-tabs .components-tab-panel__tabs {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 6px;
+    display: flex;
+    gap: 8px;
+    margin-bottom: 30px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.vapt-main-tabs .components-tab-panel__tabs .components-button {
+    border-radius: 6px;
+    padding: 12px 24px;
+    color: #64748b;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border: 1px solid transparent !important;
+    background: transparent;
+    flex: initial;
+    /* Auto width based on content */
+    justify-content: center;
+    font-size: 14px;
+}
+
+.vapt-main-tabs .components-tab-panel__tabs .components-button:hover {
+    background: #f8fafc;
+    color: #334155;
+    border-color: #f1f5f9 !important;
+}
+
+.vapt-main-tabs .components-tab-panel__tabs .components-button.is-active {
+    background: #eff6ff;
+    color: #2271b1;
+    font-weight: 600;
+    border-color: #dbeafe !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+.vapt-main-tabs .components-tab-panel__tabs .components-button:focus {
+    box-shadow: none !important;
+    border-color: #2271b1 !important;
+}
+
+/* Elite Action Icons */
+.vapt-elite-action-btn {
+    color: #94a3b8;
+    transition: color 0.2s ease, transform 0.2s ease;
+    cursor: pointer;
+}
+
+.vapt-elite-action-btn:hover {
+    color: #334155;
+    transform: scale(1.1);
+}
+
+.vapt-elite-action-btn.is-destructive:hover {
+    color: #dc2626;
+}
+
+
+/* Button Toggle States */
+.vapt-btn-active {
+    background: #46b450 !important;
+    border-color: #317f38 !important;
+    color: #fff !important;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+    position: relative;
+    padding-left: 30px !important;
+}
+
+.vapt-btn-active::before {
+    content: "\f147";
+    /* dashicons-yes */
+    font-family: dashicons;
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 16px;
+}
+
+
+
+
+
+/* Premium Button Styling */
+.vapt-premium-btn {
+    background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%) !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: 6px !important;
+    padding: 8px 16px !important;
+    font-weight: 600 !important;
+    font-size: 10px !important;
+    letter-spacing: 0.02em !important;
+    text-transform: uppercase !important;
+    box-shadow: 0 4px 8px rgba(34, 197, 94, 0.25) !important;
+    transition: all 0.2s ease !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    cursor: pointer !important;
+    height: auto !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+}
+
+.vapt-premium-btn.is-custom {
+    background: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%) !important;
+    box-shadow: 0 4px 8px rgba(37, 99, 235, 0.25) !important;
+}
+
+.vapt-premium-btn.is-custom:hover {
+    background: linear-gradient(135deg, #93c5fd 0%, #3b82f6 100%) !important;
+    box-shadow: 0 6px 12px rgba(37, 99, 235, 0.35) !important;
+}
+
+.vapt-premium-btn:hover {
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%) !important;
+    box-shadow: 0 4px 6px rgba(34, 197, 94, 0.3) !important;
+    transform: translateY(-1px);
+}
+
+.vapt-premium-btn:active {
+    transform: translateY(0);
+}
+
+.vapt-premium-btn.stage-test {
+    background: linear-gradient(135deg, #dba617 0%, #b88a12 100%) !important;
+    box-shadow: 0 4px 8px rgba(219, 166, 23, 0.25) !important;
+}
+
+.vapt-premium-btn.stage-test:hover {
+    background: linear-gradient(135deg, #ecc14e 0%, #dba617 100%) !important;
+}
+
+.vapt-premium-btn.stage-release {
+    background: linear-gradient(135deg, #f97316 0%, #ea580c 100%) !important;
+    box-shadow: 0 4px 8px rgba(249, 115, 22, 0.25) !important;
+}
+
+.vapt-premium-btn.stage-release:hover {
+    background: linear-gradient(135deg, #fb923c 0%, #f97316 100%) !important;
+}
+
+.vapt-premium-btn .dashicons {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+}
+
+/* Prevent Sidebar Menu Wrapping */
+#adminmenu a.wp-has-submenu.wp-not-current-submenu.vaptsecure-menu-item,
+#adminmenu .wp-has-current-submenu ul.wp-submenu li a {
+    white-space: nowrap !important;
+}
+
+/* Specific fix for our renamed menu */
+#adminmenu .wp-submenu a[href*="page=vaptsecure"] {
+    white-space: nowrap !important;
+    padding-right: 20px !important;
+}
+
+/* Design Implementation Modal Layout (v3.3.46 - Fixed) */
+.vapt-design-modal {
+    width: 1100px;
+    max-width: 95vw;
+    max-height: 90vh;
+}
+
+.vapt-design-modal .components-modal__content {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#vapt-design-modal-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 25px;
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+}
+
+#vapt-design-modal-left-col {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 5px;
+    /* gap: 16px; */
+}
+
+#vapt-design-modal-right-col {
+    display: flex;
+    flex-direction: column;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+    min-height: 0;
+}
+
+#vapt-design-modal-actions {
+    margin-bottom: 0;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+#vapt-design-modal-toggles {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 10px 14px;
+    flex-direction: row !important;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: center;
+}
+
+#vapt-design-modal-toggles .components-toggle-control {
+    margin-bottom: 0 !important;
+    flex: 1;
+    min-width: 200px;
+}
+
+#vapt-design-modal-toggles .components-toggle-control .components-base-control__field {
+    margin-bottom: 0 !important;
+}
+
+#vapt-design-modal-toggles .components-toggle-control label {
+    font-size: 11px !important;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#vapt-design-modal-toggles .components-toggle-control:last-child {
+    margin-bottom: 0;
+}
+
+#vapt-design-modal-schema-editor {
+    display: flex;
+    flex-direction: column;
+    min-height: 250px;
+    flex: 1;
+}
+
+#vapt-schema-editor-label {
+    margin-bottom: 6px;
+}
+
+#vapt-schema-editor-hint {
+    margin-bottom: 8px;
+    color: #64748b;
+    margin-top: -12px;
+}
+
+#vapt-schema-textarea {
+    flex: 1;
+    min-height: 200px;
+    font-family: 'SF Mono', Monaco, Inconsolata, 'Fira Code', monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    resize: vertical;
+}
+
+#vapt-design-modal-guidance {
+    margin-top: 8px;
+}
+
+.vapt-guidance-box {
+    border-radius: 6px;
+}
+
+#vapt-design-modal-preview-stack {
+    padding: 0;
+}
+
+/* Ensure controls inside respect bounds */
+.vapt-design-modal-inner-layout input,
+.vapt-design-modal-inner-layout textarea,
+.vapt-design-modal-inner-layout select {
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* Better button alignment in modal header */
+.vapt-design-modal-header {
+    align-items: center;
+}
+
+.vapt-design-modal-header .components-button {
+    height: 32px;
+    min-height: 32px;
+}
+
+/* Preview body flex fix */
+.vapt-design-modal-preview-body {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Card box improvements */
+.vapt-card-box {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Empty state styling */
+.vapt-empty-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 150px;
+    color: #9ca3af;
+    font-style: italic;
+}
+
+/* Global status notifications (Toasts) */
+.vapt-toast-notification {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 10px 20px;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    font-weight: 600;
+    transition: opacity 0.3s ease-in-out;
+    color: #fff;
+}
+
+.vapt-toast-notification.is-error {
+    background: #d63638;
+}
+
+.vapt-toast-notification.is-success {
+    background: #2271b1;
+}
+
+/* Modal Inner Notification */
+.vapt-modal-banner {
+    position: absolute;
+    top: 20px;
+    right: 50%;
+    transform: translateX(50%);
+    padding: 10px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.vapt-modal-banner.is-error {
+    background: #fde8e8;
+    color: #9b1c1c;
+}
+
+.vapt-modal-banner.is-success {
+    background: #def7ec;
+    color: #03543f;
+}
+
+/* Utility Layout Classes */
+.vapt-flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.vapt-flex-between {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.vapt-flex-row {
+    display: flex;
+    gap: 3px;
+    align-items: center;
+    padding-right: 5px;
+    width: max-content;
+    /* By Tanveer */
+}
+
+/* Tnveer - Hide Legacy Workbench Design Button */
+.vapt-flex-row>button:nth-of-type(1) {
+    display: none !important;
+    /* or any other styles you want */
+}
+
+.components-tooltip {
+    text-align: left;
+}
+
+/* Ends */
+
+.vapt-flex-col {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.vapt-grid-2-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+}
+
+/* Dashboard Toolbar */
+.vapt-toolbar-block {
+    display: flex;
+    gap: 12px;
+    background: #f6f7f7;
+    padding: 10px 15px;
+    border-radius: 4px;
+    border: 1px solid #dcdcde;
+    margin-bottom: 10px;
+    align-items: center;
+}
+
+/* Branded Icon Button */
+.vapt-toolbar-btn-icon {
+    cursor: pointer;
+    background: #2271b1;
+    color: #fff;
+    border-radius: 3px;
+    width: 30px;
+    height: 30px;
+    min-height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    box-sizing: border-box;
+}
+
+/* Table Enhancements */
+.vapt-th-sortable {
+    position: relative;
+    padding-left: 10px;
+    padding-right: 10px;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.vapt-th-sortable.is-active {
+    background: #f0f6fb;
+}
+
+.vapt-sort-indicator {
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Design Modal Internals (v3.3.45 Cleanup) */
+.vapt-design-modal-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.vapt-design-modal-preview-header {
+    padding: 10px 15px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #fff;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.vapt-design-modal-preview-body {
+    padding: 15px;
+    flex: 1 1 auto;
+    overflow-y: auto;
+    min-height: 0;
+    max-height: 68vh;
+}
+
+.vapt-label-uppercase {
+    font-size: 11px;
+    font-weight: 500;
+    margin-top: 16px;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    color: #101517;
+}
+
+.vapt-text-hint {
+    font-size: 11px;
+    color: #666;
+    margin-bottom: 8px;
+}
+
+.vapt-preview-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #4b5563;
+}
+
+.vapt-card-box {
+    padding: 15px;
+    background: #fff;
+    border-radius: 8px;
+    border: 1px solid #eee;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.vapt-card-title {
+    margin: 0 0 10px 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.vapt-empty-state {
+    padding: 20px;
+    text-align: center;
+    color: #999;
+    font-style: italic;
+}
+
+.vapt-textarea-code {
+    font-family: monospace;
+    font-size: 12px;
+    line-height: 1.4;
+    resize: none;
+    width: 100%;
+    border: 1px solid #757575;
+    border-radius: 4px;
+    padding: 8px;
+    box-sizing: border-box;
+    transition: background 0.2s;
+}
+
+/* Domain License Directory Table Styling */
+.vapt-license-table-wrap {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 20px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.vapt-license-table-wrap h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 1.1em;
+    font-weight: 600;
+    color: #23282d;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+.vapt-license-table-wrap .wp-list-table {
+    border: 1px solid #dcdcde;
+    box-shadow: none;
+}
+
+.vapt-license-table-wrap tr.is-selected {
+    background-color: #f0f6fc !important;
+}
+
+.vapt-license-table-wrap tr.is-selected td.column-primary {
+    box-shadow: inset 3px 0 0 0 #2271b1;
+}
+
+.vapt-license-table-wrap .sorting-indicator::before {
+    content: "\f142";
+    font-family: dashicons;
+}
+
+.vapt-license-table-wrap th.sorted.asc .sorting-indicator::before {
+    content: "\f142";
+}
+
+.vapt-license-table-wrap th.sorted.desc .sorting-indicator::before {
+    content: "\f140";
+}
+
+
+/* 🛡️ CROSS-FILE FEATURE VISIBILITY (v3.6.30) */
+
+/* Golden-Yellow: Features only in inactive files */
+.vapt-feature-inactive-only {
+    background: #fef3c7 !important;
+    border-left: 4px solid #f59e0b !important;
+}
+
+/* Golden-Yellowish: Features present in multiple files (Common) */
+.vapt-feature-multi-file {
+    background-color: #fefce8 !important;
+    /* Very light yellow */
+    border-left: 4px solid #facc15 !important;
+    /* Gold border */
+    font-weight: 600 !important;
+}
+
+.vapt-sort-checkbox {
+    margin-bottom: 0 !important;
+}
+
+.vapt-feature-multi-file td,
+.vapt-feature-multi-file td strong,
+.vapt-feature-multi-file td span,
+.vapt-feature-multi-file td .vapt-severity-badge {
+    color: #854d0e !important;
+    /* Dark golden brown for readability */
+}
+
+.vapt-feature-table tbody tr.vapt-feature-multi-file:hover {
+    background-color: #fef9c3 !important;
+    /* Slightly darker yellow on hover */
+}
+
+
+
+/* Panel Header Height Reduction */
+.vapt-feature-panel .components-panel__body-title,
+.vapt-feature-panel .components-panel__body-toggle.components-button {
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+    min-height: 0 !important;
+    height: auto !important;
+}
+
+.vapt-feature-panel .components-panel__body-title h2 {
+    margin: 0 !important;
+    font-size: 13px !important;
+}
+
+/* --- VAPT Client Dashboard Revamp (v4.0.0) --- */
+.vapt-client-root.premium-layout {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+}
+
+.vapt-client-sidebar .menu-item:hover {
+    background: #f1f5f9 !important;
+    transform: translateX(4px);
+}
+
+.vapt-client-sidebar .menu-item.active {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.vapt-stat-card.premium {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.vapt-stat-card.premium:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+    border-color: #3b82f6 !important;
+}
+
+.pulse-dot {
+    width: 8px;
+    height: 8px;
+    background: #10b981;
+    border-radius: 50%;
+    display: inline-block;
+    animation: vapt-pulse 2s infinite;
+}
+
+@keyframes vapt-pulse {
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    }
+
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+    }
+
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    }
+}
+
+.vapt-log-card {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.vapt-log-card tr:hover {
+    background-color: #f8fafc;
+}
+
+.vapt-feature-list .components-card {
+    transition: all 0.2s ease;
+}
+
+.vapt-feature-list .components-card:hover {
+    border-color: #2271b1 !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Scrollbar styling for a cleaner look */
+.vapt-client-main::-webkit-scrollbar {
+    width: 6px;
+}
+
+.vapt-client-main::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.vapt-client-main::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+
+.vapt-client-main::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Mapping Configuration Scrollable Body */
+.vapt-mapping-scroll-body {
+    max-height: 400px;
+    /* Adjust as needed */
+    overflow-y: auto;
+    background-color: #f9f9f9;
+    border: 1px solid #e0e0e0;
+    padding: 15px;
+    border-radius: 4px;
+    /* margin-top: 15px; */
+}
+
+/* Compact Panel Enhancements (v1.3.23) */
+.components-panel__body.vapt-compact-panel {
+    margin-top: 0 !important;
+    border-top: none !important;
+}
+
+.vapt-compact-panel>.components-panel__body-title,
+.vapt-compact-panel>.components-panel__body-title .components-button {
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+    min-height: 28px !important;
+    height: auto !important;
+    box-sizing: border-box;
+}
+
+.vapt-compact-panel>.components-panel__body-title h2 {
+    margin: 0 !important;
+    font-size: 13px !important;
+}
+
+/* Premium Dashboard Layout (v1.5.0) */
+.vapt-client-root.premium-layout {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    color: #1e293b;
+}
+
+.vapt-client-sidebar {
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.02);
+    z-index: 10;
+}
+
+.sidebar-header h2 {
+    letter-spacing: -0.02em;
+}
+
+.sidebar-menu .menu-item {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.sidebar-menu .menu-item:hover {
+    background: #f8fafc !important;
+}
+
+.sidebar-menu .menu-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 60%;
+    background: #1d4ed8;
+    border-radius: 0 4px 4px 0;
+}
+
+.vapt-stat-card.premium {
+    background: rgba(255, 255, 255, 0.8) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+.vapt-log-card {
+    background: rgba(255, 255, 255, 0.8) !important;
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+.vapt-feature-card {
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02) !important;
+    border-radius: 12px !important;
+}
+
+.vapt-feature-card:hover {
+    box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.04) !important;
+    border-color: #3b82f6 !important;
+}
+
+.severity-pill {
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 10px !important;
+    padding: 2px 8px !important;
+    border-radius: 6px !important;
+    font-weight: 800 !important;
+}
+
+.status-badge {
+    font-size: 9px !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase;
+}
+
+/* Elite License Dashboard Styles */
+.vapt-license-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 20px;
+    padding: 16px;
+    background: #fdfdfd;
+}
+
+.vapt-license-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.vapt-license-card h3 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.vapt-license-badge {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.025em;
+}
+
+.vapt-license-badge.standard {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #dbeafe;
+}
+
+.vapt-license-badge.pro {
+    background: #dcfce7;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+}
+
+.vapt-license-badge.developer {
+    background: #f5f3ff;
+    color: #7c3aed;
+    border: 1px solid #ddd6fe;
+}
+
+.vapt-status-pill-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+}
+
+.vapt-status-pill-btn.active {
+    background: #dcfce7;
+    color: #15803d;
+    border-color: #bbf7d0;
+    font-weight: 700;
+}
+
+.vapt-status-pill-btn.inactive {
+    background: #fef2f2;
+    color: #dc2626;
+    border-color: #f87171;
+}
+
+.vapt-status-pill-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.vapt-elite-action-btn {
+    color: #64748b;
+    background: none;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.vapt-elite-action-btn:hover {
+    background: #f1f5f9;
+    color: #1e293b;
+}
+
+.vapt-elite-action-btn.delete:hover {
+    color: #ef4444;
+    background: #fef2f2;
+}
+
+.vapt-usage-wrapper {
+    width: 100%;
+}
+
+.vapt-usage-bar-bg {
+    width: 100%;
+    height: 6px;
+    background: #f1f5f9;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 4px;
+}
+
+.vapt-usage-bar-fill {
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.vapt-usage-bar-fill.safe {
+    background: #22c55e;
+}
+
+.vapt-usage-bar-fill.warning {
+    background: #f59e0b;
+}
+
+.vapt-usage-bar-fill.danger {
+    background: #ef4444;
+}
+
+/* New Usage Directory Layout */
+.vapt-usage-directory-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+}
+
+.vapt-usage-count {
+    font-weight: 700;
+    min-width: 30px;
+}
+
+.vapt-usage-percent {
+    font-size: 10px;
+    color: #94a3b8;
+    min-width: 30px;
+}
+
+.vapt-usage-icon {
+    color: #64748b;
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+.vapt-desc-text {
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.5;
+    background: #f8fafc;
+    padding: 12px;
+    border-left: 3px solid #3b82f6;
+    border-radius: 0 4px 4px 0;
+}

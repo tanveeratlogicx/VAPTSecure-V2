@@ -567,3 +567,5 @@ class VAPTGUARD_License_Manager
 
 // Initialize the license manager
 VAPTGUARD_License_Manager::init();
+
+

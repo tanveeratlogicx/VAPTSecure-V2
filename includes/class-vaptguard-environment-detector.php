@@ -294,3 +294,5 @@ class VAPTGUARD_Environment_Detector
         return $this->detect(true);
     }
 }
+
+

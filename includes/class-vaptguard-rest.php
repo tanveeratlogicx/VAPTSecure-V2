@@ -362,6 +362,23 @@ class VAPTGUARD_REST
             'permission_callback' => array($this, 'check_read_permission'),
             )
         );
+
+        // Column Preferences API - Save/Load from Options Table instead of localStorage
+        register_rest_route(
+            'vaptguard/v1', '/column-preferences', array(
+            'methods'  => 'GET',
+            'callback' => array($this, 'get_column_preferences'),
+            'permission_callback' => array($this, 'check_read_permission'),
+            )
+        );
+
+        register_rest_route(
+            'vaptguard/v1', '/column-preferences', array(
+            'methods'  => 'POST',
+            'callback' => array($this, 'save_column_preferences'),
+            'permission_callback' => array($this, 'check_permission'),
+            )
+        );
     }
 
     public function check_permission()
@@ -2140,4 +2157,50 @@ class VAPTGUARD_REST
     // ========================================================================
     // ORIGINAL METHOD IMPLEMENTATIONS REMOVED
 
+    /**
+     * Get column preferences from WordPress Options Table
+     */
+    public function get_column_preferences($request)
+    {
+        $user_id = get_current_user_id();
+        $option_key = 'vaptguard_column_preferences_' . $user_id;
+        $preferences = get_option($option_key, array());
+
+        return new WP_REST_Response($preferences, 200);
+    }
+
+    /**
+     * Save column preferences to WordPress Options Table
+     */
+    public function save_column_preferences($request)
+    {
+        $user_id = get_current_user_id();
+        $option_key = 'vaptguard_column_preferences_' . $user_id;
+        $body = $request->get_json_params();
+
+        $column_order = isset($body['column_order']) ? $body['column_order'] : array();
+        $visible_cols = isset($body['visible_cols']) ? $body['visible_cols'] : array();
+
+        // Filter out invalid fields (like 'title') - only allow valid data file fields
+        $valid_keys = array('RiskID', 'id', 'name', 'description', 'category', 'severity', 'owasp', 'test_method', 'verification_steps', 'remediation');
+        $column_order = array_values(array_filter($column_order, function($key) use ($valid_keys) {
+            return in_array($key, $valid_keys);
+        }));
+        $visible_cols = array_values(array_filter($visible_cols, function($key) use ($valid_keys) {
+            return in_array($key, $valid_keys);
+        }));
+
+        $preferences = array(
+            'column_order' => $column_order,
+            'visible_cols' => $visible_cols,
+            'updated_at' => current_time('mysql')
+        );
+
+        update_option($option_key, $preferences);
+
+        return new WP_REST_Response(array('success' => true, 'preferences' => $preferences), 200);
+    }
+
 }
+
+

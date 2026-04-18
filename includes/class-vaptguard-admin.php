@@ -72,7 +72,29 @@ class VAPTGUARD_Admin
         wp_enqueue_script('vaptguard-admin-design-modal', VAPTGUARD_URL . 'assets/js/admin-modules/design-modal.js', array('wp-api-fetch', 'vaptguard-admin-modals'), VAPTGUARD_VERSION, true);
         wp_enqueue_script('vaptguard-admin-domains', VAPTGUARD_URL . 'assets/js/admin-modules/domains.js', array('wp-api-fetch', 'vaptguard-admin-logger'), VAPTGUARD_VERSION, true);
 
-        // 3. Enqueue Admin Dashboard Script with full dependency block
+        // 3. Enqueue Workbench Script (Phase 3)
+        wp_enqueue_script(
+            'vaptguard-workbench-js',
+            VAPTGUARD_URL . 'assets/js/workbench.js',
+            array(
+                'wp-element', 'wp-components', 'wp-api-fetch', 'wp-i18n',
+                'vaptguard-interface-generator', 'vaptguard-generated-interface-ui',
+                'vaptguard-admin-logger', 'vaptguard-admin-api-fetch-hotpatch'
+            ),
+            VAPTGUARD_VERSION,
+            true
+        );
+
+        // Enqueue Client Dashboard Script
+        wp_enqueue_script(
+            'vaptguard-client-js',
+            VAPTGUARD_URL . 'assets/js/client.js',
+            array('wp-element', 'wp-components', 'wp-api-fetch', 'wp-i18n'),
+            VAPTGUARD_VERSION,
+            true
+        );
+
+        // 4. Enqueue Admin Dashboard Script with full dependency block
         wp_enqueue_script(
             'vaptguard-admin-js',
             VAPTGUARD_URL . 'assets/js/admin.js',
@@ -90,7 +112,7 @@ class VAPTGUARD_Admin
         wp_enqueue_style('vaptguard-admin-css', VAPTGUARD_URL . 'assets/css/admin.css', array('wp-components'), VAPTGUARD_VERSION);
 
         wp_localize_script(
-            'vaptguard-admin-js', 'vaptguardSecureSettings', array(
+            'vaptguard-admin-js', 'vaptguardSettings', array(
             'root' => esc_url_raw(rest_url()),
             'homeUrl' => esc_url_raw(home_url()),
             'nonce' => wp_create_nonce('wp_rest'),
@@ -113,3 +135,5 @@ class VAPTGUARD_Admin
         wp_die(__('The VAPT Auditor has been removed.', 'vaptguard'));
     }
 }
+
+
