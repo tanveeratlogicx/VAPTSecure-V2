@@ -4,7 +4,7 @@
  * Plugin Name: VAPTGuard Pro
  * Plugin URI: https://vaptguard.com/
  * Description: WordPress Security SaaS Platform - Dual interface security plugin with feature builder
- * Version: 1.0.3
+ * Version: 1.0.4
  * Author: Tanveer H. Malik
  * Author URI: https://vaptguard.com/
  * License: GPLv2 or later
@@ -58,7 +58,7 @@ if (false) {
 if (defined('VAPTGUARD_BUILD_VERSION')) {
     define('VAPTGUARD_VERSION', VAPTGUARD_BUILD_VERSION);
 } else {
-    define('VAPTGUARD_VERSION', '1.0.3');
+    define('VAPTGUARD_VERSION', '1.0.4');
 }
 if (! defined('VAPTGUARD_DATA_VERSION')) {
     define('VAPTGUARD_DATA_VERSION', '1.0.0');
@@ -252,7 +252,7 @@ function vaptguard_activate_plugin()
     // Feature Status Table
     $table_status = "CREATE TABLE {$wpdb->prefix}vaptguard_feature_status (
         feature_key VARCHAR(100) NOT NULL,
-        status ENUM('Draft', 'Develop', 'Release') DEFAULT 'Draft',
+        status ENUM('Draft', 'Develop', 'Test', 'Release') DEFAULT 'Draft',
         implemented_at DATETIME DEFAULT NULL,
         assigned_to BIGINT(20) UNSIGNED DEFAULT NULL,
         PRIMARY KEY  (feature_key)
