@@ -1682,7 +1682,7 @@ var vaptLog = window.vaptLog || {
 
       // Enhanced feedback with details
       if (mappedCount === 0) {
-        alert(__('No new matching fields found.', 'vaptguard'));
+        setAlertState({ message: __('No new matching fields found.', 'vaptguard'), type: 'info' });
       } else {
         // Create detailed message
         let message = sprintf(__('Auto-mapped %d new fields:\n\n', 'vaptguard'), mappedCount);
@@ -1694,7 +1694,7 @@ var vaptLog = window.vaptLog || {
           );
         });
         message += '\n' + __('Review the mappings in the modal.', 'vaptguard');
-        alert(message);
+        setAlertState({ message: message, type: 'success' });
 
         // Also log to console for debugging
         if (VAPT_DEBUG) {
@@ -2231,7 +2231,7 @@ var vaptLog = window.vaptLog || {
   };
 
   // Lifecycle Indicator Component
-  const LifecycleIndicator = ({ feature, onChange, onDirectUpdate }) => {
+  const LifecycleIndicator = ({ feature, onChange, onDirectUpdate, setAlertState: externalSetAlertState }) => {
     const activeStep = feature.status;
     const [warningState, setWarningState] = useState(null); // { type, nextStatus }
 
@@ -2250,6 +2250,14 @@ var vaptLog = window.vaptLog || {
     const handleSelection = (nextStatus) => {
       const currentVal = getStepValue(activeStep);
       const nextVal = getStepValue(nextStatus);
+
+      // Forward transitions must be adjacent
+      if (nextVal > currentVal && nextVal !== currentVal + 1) {
+        if (externalSetAlertState) {
+          externalSetAlertState({ message: __('Invalid transition: Only adjacent forward transitions are allowed.', 'vaptguard'), type: 'error' });
+        }
+        return;
+      }
 
       if (nextVal < currentVal) {
         // PCR: Backward Transition Warning
@@ -4251,10 +4259,17 @@ var vaptLog = window.vaptLog || {
   const generateDevInstructions = (f, fieldMapping = {}) => {
     if (!f) return '';
 
-    const id = f.risk_id || f.key || 'N/A';
-    const title = f.title || f.label || 'N/A';
+    // Handle case-sensitive and field name variations from JSON structure
+    const id = f.RiskID || f.risk_id || f.key || 'N/A';
+    const title = f.name || f.title || f.label || 'N/A';
     const severity = (typeof f.severity === 'object') ? (f.severity.level || 'Medium') : (f.severity || 'Medium');
-    const priority = f.priority || 'Medium';
+    // Derive priority from severity if priority field is missing
+    const priority = f.priority || (severity === 'High' ? 'High' : severity === 'Low' ? 'Low' : 'Medium');
+    const category = f.category || 'General';
+    const testMethod = f.test_method || 'Manual verification';
+    const owaspRef = f.owasp || '';
+    const verificationSteps = f.verification_steps || [];
+    const remediation = f.remediation || '';
 
     // Mapped Fields Extraction for instructions
     const mappedDesc = getMappedContent(f, 'description', 'description', fieldMapping);
@@ -4264,14 +4279,25 @@ var vaptLog = window.vaptLog || {
     const mappedActions = getMappedContent(f, 'actions', 'actions', fieldMapping);
     const mappedAvailablePlatforms = getMappedContent(f, 'available_platforms', 'available_platforms', fieldMapping);
 
+    // Fallback: Derive platform hints from remediation field if available_platforms is missing
+    let platformHints = [];
+    if (!mappedAvailablePlatforms && f.remediation) {
+      const remed = f.remediation.toLowerCase();
+      if (remed.includes('.htaccess') || remed.includes('apache')) platformHints.push('.htaccess');
+      if (remed.includes('wp-config') || remed.includes('wp-config.php')) platformHints.push('wp-config.php');
+      if (remed.includes('plugin') || remed.includes('php') || remed.includes('hook')) platformHints.push('PHP Hook');
+      if (remed.includes('nginx')) platformHints.push('Nginx');
+      if (remed.includes('iis') || remed.includes('web.config')) platformHints.push('IIS');
+    }
+
     // Driver Detection (Skill Alignment)
-    const targets = f.protection?.automated_protection?.implementation_targets || f.available_platforms || [];
+    const targets = f.protection?.automated_protection?.implementation_targets || f.available_platforms || platformHints;
     let detectedDriver = 'Manual / Hook (default)';
     let safetyRules = [];
     let targetFiles = [];
     let driverKey = '';
 
-    const selection = f.active_enforcer;
+    const selection = f.active_enforcer || (platformHints.length > 0 ? platformHints[0] : null);
 
     if (selection) {
       const selLower = selection.toLowerCase();
@@ -4404,7 +4430,9 @@ var vaptLog = window.vaptLog || {
     const lines = [
       `# VAPT Implementation Brief v2.0 (Schema-First)`,
       `**Risk**: ${id} (${title})`,
+      `**Category**: ${category}`,
       `**Severity**: ${severity} | **Priority**: ${priority}`,
+      owaspRef ? `**OWASP**: ${owaspRef}` : '',
       ``,
       `## 0. Core Principle: Preserve Core Functionality`,
       `- **Whitelisting**: You MUST ensure that all security rules explicitly whitelist or preserve access to:`,
@@ -4416,6 +4444,8 @@ var vaptLog = window.vaptLog || {
       `## 🛡️ Strategic Mandate (Schema-First v2.0)`,
       `- **Goal**: ${summary}`,
       `- **Primary Driver**: ${detectedDriver}`,
+      platformHints.length > 0 && !f.available_platforms ? `- **Platform Detection**: Derived from remediation field (${platformHints.join(', ')})` : '',
+      `- **Test Method**: ${testMethod}`,
       `- **Rulebook**: Ingest \`ai_agent_instructions_v2.0.json\`.`,
       `- **Blueprint**: Look up \`${id}\` in \`interface_schema_v2.0.json\`.`,
       `- **Pattern matching**: Map \`lib_key\` to \`enforcer_pattern_library_v2.0.json\`.`,
@@ -4424,6 +4454,13 @@ var vaptLog = window.vaptLog || {
       `- **Control**: Check \`feat_enabled\` state for all enforcement code.`,
       `- **Conditional Logic**: Inject full blocks if enabled; comment out/remove if disabled.`,
       `- **Markers**: Always use VAPT markers (BEGIN/END) for all injections.`,
+      ``,
+      `## 🌐 FQDN Architecture (Lifecycle Standard)`,
+      `- **REST API Endpoints**: MUST use \`https://{SITE_DOMAIN}/wp-json/vaptguard/v1/*\` format`,
+      `- **Admin Pages**: MUST use \`https://{SITE_DOMAIN}/wp-admin/admin.php?page=*\` format`,
+      `- **No Relative URLs**: Avoid relative paths like \`/wp-json/\` or \`/wp-admin/\``,
+      `- **Dynamic Domain**: Use WordPress \`site_url()\` or \`home_url()\` to construct FQDN URLs`,
+      `- **Cross-Environment**: FQDN ensures consistency across dev, staging, and production environments`,
       `## 🧩 User Interface Requirements`,
       ...(hasMappingRules ? [
         `You MUST strictly adhere to the mapped UI Schema references provided in the Context data:`,
@@ -4440,15 +4477,30 @@ var vaptLog = window.vaptLog || {
       `Ensure that the suggested protection configurations are specifically targeted to be written/appended within exactly these files:`,
       ...targetFiles.map(file => `- \`${file}\``),
       ``,
+      targetFiles.length === 0 ? `**Note**: No specific target files detected. Use FQDN Architecture for any web-based configurations: \`https://{SITE_DOMAIN}/wp-json/vaptguard/v1/*\`` : '',
+      targetFiles.length === 0 ? `` : '',
       `## ⚠️ Targeted Safety Guidelines`,
       ...(safetyRules.length > 0 ? safetyRules.map(rule => `- ${rule}`) : [`- Follow standard WordPress security best practices.`]),
+      `- **FQDN Compliance**: All REST API calls and admin page links must use FQDN format (\`https://{SITE_DOMAIN}/wp-json/vaptguard/v1/*\`)`,
+      `- **No Hardcoded Domains**: Use WordPress functions \`site_url()\` or \`home_url()\` instead of hardcoded domain names`,
       ``,
+      ...(verificationSteps.length > 0 ? [
+        `## 🔍 Verification Steps`,
+        ...verificationSteps.map(step => `- ${step}`),
+        ``
+      ] : []),
+      ...(remediation ? [
+        `## 🔧 Remediation Guidance`,
+        `- ${remediation}`,
+        ``
+      ] : []),
       `## 📋 Self-Check & Rubric (Completion Standards)`,
       `- **Develop Phase**: Minimum Score **16/19**.`,
       `- **Deploy Phase**: Minimum Score **18/19** (Governed by \`/develop-to-deploy\` workflow).`,
+      `- **FQDN Compliance**: All URLs must use Fully Qualified Domain Name format across the entire lifecycle.`,
       ``,
       `> [!IMPORTANT]`,
-      `> This brief follows the **VAPT v2.0 Schema First Architecture**. You MUST prioritize **Whitelisting** and follow the **Transition to Develop** sequence.`
+      `> This brief follows the **VAPT v2.0 Schema First Architecture**. You MUST prioritize **Whitelisting**, follow the **Transition to Develop** sequence, and enforce **FQDN Architecture** for all REST API and admin page URLs.`
     ];
 
     // Overlay custom user instructions if any existed previously
@@ -4463,7 +4515,7 @@ var vaptLog = window.vaptLog || {
     features, schema, updateFeature, loading, dataFiles, selectedFile, onSelectFile, onUpload, allFiles, hiddenFiles, onUpdateHiddenFiles, manageSourcesStatus, isManageModalOpen, setIsManageModalOpen, onRemoveFile, designPromptConfig, setDesignPromptConfig,
     historyFeature, setHistoryFeature, designFeature, setDesignFeature, transitioning, setTransitioning, isPromptConfigModalOpen, setIsPromptConfigModalOpen, isMappingModalOpen, setIsMappingModalOpen,
     sortBySource, setSortBySource, sortSourceDirection, setSortSourceDirection,
-    environmentProfile
+    environmentProfile, setAlertState
   }) => {
     const [confirmingFile, setConfirmingFile] = useState(null);
     // Default column order and visible columns - will be overridden by API data if available
@@ -5556,12 +5608,14 @@ var vaptLog = window.vaptLog || {
                 )));
               }
 
+              const isCategory = col === 'category';
               return el('td', {
                 key: col,
                 style: {
                   padding: '8px 12px',
                   verticalAlign: 'top',
-                  fontSize: '12px'
+                  fontSize: '12px',
+                  whiteSpace: isCategory ? 'nowrap' : 'normal'
                 }
               }, content);
             }),
@@ -5570,6 +5624,7 @@ var vaptLog = window.vaptLog || {
                 el(LifecycleIndicator, {
                   feature: f,
                   onDirectUpdate: (key, updates) => updateFeature(key, updates),
+                  setAlertState: setAlertState,
                   onChange: (newStatus) => {
                     // Validation: Prevent Draft -> Release
                     const currentStatus = f.status;
@@ -6348,7 +6403,8 @@ var vaptLog = window.vaptLog || {
             setSortBySource,
             sortSourceDirection,
             setSortSourceDirection,
-            environmentProfile
+            environmentProfile,
+            setAlertState
           });
           case 'license': return el(LicenseManager, {
             domains,
