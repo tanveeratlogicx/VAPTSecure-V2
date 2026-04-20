@@ -1329,7 +1329,7 @@ class VAPTGUARD_REST
         if (empty($feature_key)) {
             return new WP_REST_Response(array('error' => 'feature_key is required'), 400);
         }
-        if (!in_array($new_status, array('Draft', 'Develop', 'Release'), true)) {
+        if (!in_array($new_status, array('Draft', 'Develop', 'Test', 'Release'), true)) {
             return new WP_REST_Response(array('error' => 'Invalid status'), 400);
         }
 
@@ -1342,6 +1342,16 @@ class VAPTGUARD_REST
             return new WP_REST_Response(array('error' => 'Feature not found: ' . $feature_key), 404);
         }
         $old_status = $current_row['status'];
+
+        $allowed_transitions = array(
+            'Draft'   => array('Develop'),
+            'Develop'=> array('Draft', 'Test'),
+            'Test'   => array('Develop', 'Release'),
+            'Release'=> array('Develop'),
+        );
+        if (!isset($allowed_transitions[$old_status]) || !in_array($new_status, $allowed_transitions[$old_status], true)) {
+            return new WP_REST_Response(array('error' => "Invalid transition: '{$old_status}' → '{$new_status}'. Only adjacent transitions are allowed."), 400);
+        }
 
         // Save dev_instruct / wireframe_url to meta
         $meta_updates = array();

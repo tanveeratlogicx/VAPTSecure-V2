@@ -74,3 +74,4 @@ vapt-dashboard.png
 *.png
 
 temp/*
+data/Older/*

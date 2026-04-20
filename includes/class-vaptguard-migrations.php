@@ -227,7 +227,7 @@ class VAPTGUARD_Migrations
 
         $sql = "CREATE TABLE IF NOT EXISTS {$table_name} (
             feature_key VARCHAR(100) NOT NULL,
-            status ENUM('Draft', 'Develop', 'Release') DEFAULT 'Draft',
+            status ENUM('Draft', 'Develop', 'Test', 'Release') DEFAULT 'Draft',
             implemented_at DATETIME DEFAULT NULL,
             assigned_to BIGINT(20) UNSIGNED DEFAULT NULL,
             PRIMARY KEY  (feature_key)
