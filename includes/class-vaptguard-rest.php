@@ -23,6 +23,31 @@ class VAPTGUARD_REST extends VAPTGUARD_REST_Base
         return self::$cached_pattern_library;
     }
 
+    protected static function get_features_cache_version()
+    {
+        return (string) get_option('vaptguard_features_cache_version', '0');
+    }
+
+    protected static function bump_features_cache_version()
+    {
+        update_option('vaptguard_features_cache_version', (string) time(), false);
+    }
+
+    protected static function build_features_cache_key($requested_file, $scope, $severity_param, $redetect, $domain, $is_superadmin)
+    {
+        $payload = array(
+            'file' => (string) $requested_file,
+            'scope' => (string) $scope,
+            'severity' => (string) $severity_param,
+            'redetect' => (string) $redetect,
+            'domain' => (string) $domain,
+            'is_superadmin' => $is_superadmin ? '1' : '0',
+            'version' => self::get_features_cache_version(),
+        );
+
+        return 'vaptguard_features_' . md5(wp_json_encode($payload));
+    }
+
     /**
      * Normalize a filename to a safe JSON file under the data directory.
      */
@@ -469,6 +494,19 @@ class VAPTGUARD_REST extends VAPTGUARD_REST_Base
             $is_superadmin = is_vaptguard_superadmin();
             $scope = $request->get_param('scope');
             $severity_param = $request->get_param('severity');
+            $cache_key = self::build_features_cache_key(
+                $requested_file,
+                $scope,
+                $severity_param,
+                $request->get_param('redetect') ? '1' : '0',
+                $request->get_param('domain'),
+                $is_superadmin
+            );
+
+            $cached_response = get_transient($cache_key);
+            if ($cached_response !== false) {
+                return new WP_REST_Response($cached_response, 200);
+            }
 
             $features = [];
             $schema = [];
@@ -805,6 +843,7 @@ class VAPTGUARD_REST extends VAPTGUARD_REST_Base
                 $response_data['active_catalog'] = $requested_file;
                 $response_data['total_features'] = count($features);
             }
+            set_transient($cache_key, $response_data, 5 * MINUTE_IN_SECONDS);
             return new WP_REST_Response($response_data, 200);
         } catch (\Throwable $e) {
             error_log('[VAPT REST Error] get_features: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
@@ -887,6 +926,7 @@ class VAPTGUARD_REST extends VAPTGUARD_REST_Base
             
             // Update the active file option
             update_option('vaptguard_active_feature_file', $filename);
+            self::bump_features_cache_version();
             
             self::debug_log("VAPT REST: Active file set to '{$filename}'");
             return new WP_REST_Response([
@@ -1219,6 +1259,7 @@ class VAPTGUARD_REST extends VAPTGUARD_REST_Base
             }
             self::debug_log("VAPT REST: Triggering vaptguard_feature_saved hook for feature '{$key}'");
             do_action('vaptguard_feature_saved', $key, $meta_updates);
+            self::bump_features_cache_version();
         } else {
              // error_log("VAPT: No meta updates identified for $key");
         }
@@ -1322,6 +1363,7 @@ class VAPTGUARD_REST extends VAPTGUARD_REST_Base
             return new WP_REST_Response(array('error' => 'Failed to write to file'), 500);
         }
 
+        self::bump_features_cache_version();
         return new WP_REST_Response(array('success' => true, 'updated_key' => $key), 200);
     }
 
@@ -1477,6 +1519,7 @@ class VAPTGUARD_REST extends VAPTGUARD_REST_Base
         }
 
         self::debug_log('VAPT Secure: Upload successful to ' . $json_path);
+        self::bump_features_cache_version();
 
         // ... rest of the logic remains same ...
 
@@ -1506,6 +1549,7 @@ class VAPTGUARD_REST extends VAPTGUARD_REST_Base
             update_option('vaptguard_removed_json_files', array_values($new_removed));
         }
 
+        self::bump_features_cache_version();
         return new WP_REST_Response(array('success' => true, 'filename' => $filename), 200);
     }
 
@@ -1520,6 +1564,7 @@ class VAPTGUARD_REST extends VAPTGUARD_REST_Base
 
         update_option('vaptguard_hidden_json_files', $hidden_files);
         $this->sanitize_active_file();
+        self::bump_features_cache_version();
 
         return new WP_REST_Response(array('success' => true, 'hidden_files' => $hidden_files), 200);
     }
@@ -1567,6 +1612,7 @@ class VAPTGUARD_REST extends VAPTGUARD_REST_Base
     public function clear_enforcement_cache($request)
     {
         delete_transient('vaptguard_active_enforcements');
+        self::bump_features_cache_version();
 
         // Also clear any other VAPT transients
         global $wpdb;
@@ -1842,6 +1888,8 @@ class VAPTGUARD_REST extends VAPTGUARD_REST_Base
         if ($result_id === false) {
             return new WP_REST_Response(array('error' => 'Database update failed'), 500);
         }
+
+        self::bump_features_cache_version();
         
         // Check if license was previously expired and is now valid (restoration scenario)
         $was_expired = get_transient('vaptguard_license_cache_' . $domain . '_expired_handled');

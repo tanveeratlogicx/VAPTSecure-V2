@@ -5752,6 +5752,8 @@ var vaptLog = window.vaptLog || {
     const [schema, setSchema] = useState({ item_fields: [] });
     const [domains, setDomains] = useState([]);
     const [dataFiles, setDataFiles] = useState([]);
+    const [domainsLoaded, setDomainsLoaded] = useState(false);
+    const [dataFilesLoaded, setDataFilesLoaded] = useState(false);
     const [selectedFile, setSelectedFile] = useState('interface_schema_v2.0.json');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -5867,7 +5869,9 @@ var vaptLog = window.vaptLog || {
       }
     }, [saveStatus]);
 
-    const fetchData = (file = selectedFile, silent = false) => {
+    const fetchData = (file = selectedFile, silent = false, options = {}) => {
+      const includeDomains = options.includeDomains !== false;
+      const includeDataFiles = options.includeDataFiles !== false;
       vaptLog.log('Fetching data for file:', file);
       if (!silent) setLoading(true);
       setSchema({ item_fields: [] }); // Clear previous schema while loading
@@ -5888,10 +5892,14 @@ var vaptLog = window.vaptLog || {
           return res;
         })
         .catch(err => { vaptLog.error('Features fetch error:', err); return []; });
-      const fetchDomains = apiFetch({ path: 'vaptguard/v1/domains' })
-        .catch(err => { vaptLog.error('Domains fetch error:', err); return []; });
-      const fetchDataFiles = apiFetch({ path: 'vaptguard/v1/data-files' })
-        .catch(err => { vaptLog.error('Data files fetch error:', err); return []; });
+      const fetchDomains = includeDomains
+        ? apiFetch({ path: 'vaptguard/v1/domains' })
+          .catch(err => { vaptLog.error('Domains fetch error:', err); return []; })
+        : Promise.resolve(null);
+      const fetchDataFiles = includeDataFiles
+        ? apiFetch({ path: 'vaptguard/v1/data-files' })
+          .catch(err => { vaptLog.error('Data files fetch error:', err); return []; })
+        : Promise.resolve(null);
 
       return Promise.all([fetchFeatures, fetchDomains, fetchDataFiles])
         .then(([res, domainData, files]) => {
@@ -5902,8 +5910,14 @@ var vaptLog = window.vaptLog || {
           setRootAiInstructions(res.ai_agent_instructions || {});
           setRootGlobalSettings(res.global_settings || {});
           setEnvironmentProfile(res.environment_profile || null);
-          setDomains(domainData || []);
-          setDataFiles(cleanedFiles);
+          if (includeDomains) {
+            setDomains(domainData || []);
+            setDomainsLoaded(true);
+          }
+          if (includeDataFiles) {
+            setDataFiles(cleanedFiles);
+            setDataFilesLoaded(true);
+          }
           setLoading(false);
         })
         .catch((err) => {
@@ -5913,17 +5927,69 @@ var vaptLog = window.vaptLog || {
         });
     };
 
+    const fetchDomainsData = (silent = true) => {
+      if (domainsLoaded) {
+        return Promise.resolve(domains);
+      }
+      if (!silent) setLoading(true);
+      return apiFetch({ path: 'vaptguard/v1/domains' })
+        .then(domainData => {
+          setDomains(domainData || []);
+          setDomainsLoaded(true);
+          if (!silent) setLoading(false);
+          return domainData;
+        })
+        .catch(err => {
+          vaptLog.error('Domains fetch error:', err);
+          if (!silent) setLoading(false);
+          return [];
+        });
+    };
+
+    const fetchDataFilesData = (silent = true) => {
+      if (dataFilesLoaded) {
+        return Promise.resolve(dataFiles);
+      }
+      if (!silent) setLoading(true);
+      return apiFetch({ path: 'vaptguard/v1/data-files' })
+        .then(files => {
+          const cleanedFiles = (files || []).map(f => ({ ...f, label: (f.label || f.filename).replace(/_/g, ' ') }));
+          setDataFiles(cleanedFiles);
+          setDataFilesLoaded(true);
+          if (!silent) setLoading(false);
+          return cleanedFiles;
+        })
+        .catch(err => {
+          vaptLog.error('Data files fetch error:', err);
+          if (!silent) setLoading(false);
+          return [];
+        });
+    };
+
     useEffect(() => {
       // First fetch the active file from backend setup
       apiFetch({ path: 'vaptguard/v1/active-file' }).then(res => {
-        if (res.active_file) {
-          setSelectedFile(res.active_file);
-          fetchData(res.active_file);
-        } else {
-          fetchData();
-        }
-      }).catch(() => fetchData());
+        const nextFile = res.active_file || selectedFile;
+        setSelectedFile(nextFile);
+        fetchData(nextFile, false, {
+          includeDomains: false,
+          includeDataFiles: activeTab === 'features'
+        });
+      }).catch(() => fetchData(selectedFile, false, {
+        includeDomains: false,
+        includeDataFiles: activeTab === 'features'
+      }));
     }, []);
+
+    useEffect(() => {
+      if (activeTab === 'license' || activeTab === 'domains' || activeTab === 'build') {
+        fetchDomainsData(true);
+      }
+
+      if (activeTab === 'features' && !dataFilesLoaded) {
+        fetchDataFilesData(true);
+      }
+    }, [activeTab]);
 
     const onSelectFile = (file) => {
       const BASELINE_FILE = 'interface_schema_v2.0.json';
