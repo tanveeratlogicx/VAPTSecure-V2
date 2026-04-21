@@ -37,6 +37,19 @@ Draft ──► Develop ──► Test ──► Release
 
 ---
 
+## Canonical Datasource
+
+`data/Updated_Feature_List_159_Adaptive.json` is the only datasource for the implementation.
+
+Contract rules:
+- Read catalog metadata from `meta.*` (version `3.1.0`, total features `159`, generated_at `2026-04-02`).
+- Preserve stable identifiers: `RiskID` and `id`.
+- Normalize `_rate_limiting_controls` references to `rate_limiting_controls`.
+- Support mixed `form_builder_support` shapes.
+- Missing `owasp` values are valid and must not block feature generation.
+
+---
+
 ## Rename Patterns (Summary)
 
 Replace all occurrences:
@@ -66,7 +79,7 @@ Replace all occurrences:
 
 ## Data File
 
-`data/Feature-List-159-Adaptive-Updated.json` - Already present, no copy needed.
+`data/Updated_Feature_List_159_Adaptive.json` - Already present, no copy needed.
 
 ---
 
@@ -95,5 +108,5 @@ COMPLETE ✓
 
 ---
 
-*Last updated: April 15, 2026*
+*Last updated: April 20, 2026*
 *VAPTGuard Pro - Ready for Implementation*

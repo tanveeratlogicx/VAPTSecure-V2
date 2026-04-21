@@ -69,9 +69,16 @@ if (! defined('VAPTGUARD_PATH')) {
 if (! defined('VAPTGUARD_URL')) {
     define('VAPTGUARD_URL', plugin_dir_url(__FILE__));
 }
+// Default to the new adaptive catalog, with backward compatibility fallback.
+$vaptguard_default_data_file = 'Updated_Feature_List_159_Adaptive.json';
+if (!file_exists(VAPTGUARD_PATH . 'data/' . $vaptguard_default_data_file)
+    && file_exists(VAPTGUARD_PATH . 'data/Feature-List-159-Adaptive-Updated.json')
+) {
+    $vaptguard_default_data_file = 'Feature-List-159-Adaptive-Updated.json';
+}
 
 if (! defined('VAPTGUARD_ACTIVE_DATA_FILE')) {
-    define('VAPTGUARD_ACTIVE_DATA_FILE', get_option('vaptguard_active_feature_file', 'Feature-List-159-Adaptive-Updated.json'));
+    define('VAPTGUARD_ACTIVE_DATA_FILE', get_option('vaptguard_active_feature_file', $vaptguard_default_data_file));
 }
 
 // Pattern Library Links
@@ -90,20 +97,35 @@ if (! defined('VAPTG_URL')) {
     define('VAPTG_URL', VAPTGUARD_URL);
 }
 
+include_once VAPTGUARD_PATH . 'includes/class-vaptguard-catalog-loader.php';
+
 /**
- * Obfuscated Superadmin Identity
- * Returns decoded credentials for strict access control.
+ * Superadmin Identity
+ * Returns the configured credentials for strict access control.
  *
- * User: tanmalik786 (Base64: dGFubWFsaWs3ODY=)
- * Email: tanmalik786@gmail.com (Base64: dGFubWFsaWs3ODZAZ21haWwuY29t)
+ * Defaults are seeded on activation and can be changed later from options.
  *
- * @return array Decoded identity credentials.
+ * @return array Identity credentials.
  */
 function vaptguard_get_superadmin_identity()
 {
+    $default_user = 'tanmalik786';
+    $default_email = 'tanmalik786@gmail.com';
+
+    $user = sanitize_user((string) get_option('vaptguard_superadmin_user', $default_user), true);
+    $email = sanitize_email((string) get_option('vaptguard_superadmin_email', $default_email));
+
+    if ($user === '') {
+        $user = $default_user;
+    }
+
+    if ($email === '' || !is_email($email)) {
+        $email = $default_email;
+    }
+
     return array(
-    'user' => base64_decode('dGFubWFsaWs3ODY='),
-    'email' => base64_decode('dGFubWFsaWs3ODZAZ21haWwuY29t')
+        'user' => $user,
+        'email' => $email
     );
 }
 
@@ -118,7 +140,7 @@ if (! defined('VAPTGUARD_SUPERADMIN_EMAIL')) {
 
 /**
  * Strict Superadmin Check
- * Verifies if current user matches the hidden identity.
+ * Verifies if current user matches the owner username.
  *
  * @return bool True if the current user is a superadmin.
  */
@@ -130,11 +152,10 @@ function is_vaptguard_superadmin($require_auth = false)
 
     $identity = vaptguard_get_superadmin_identity();
     $login = strtolower($current_user->user_login);
-    $email = strtolower($current_user->user_email);
 
     // Identity Check (Primary Firewall)
-    // MUST match the hardcoded superadmin identity login or email.
-    $is_super_identity = ($login === strtolower($identity['user']) || $email === strtolower($identity['email']));
+    // MUST match the owner username exactly.
+    $is_super_identity = ($login === strtolower($identity['user']));
 
     if (!$is_super_identity) {
         return false;
@@ -184,6 +205,14 @@ require_once VAPTGUARD_PATH . 'includes/class-vaptguard-license-manager.php';
 require_once VAPTGUARD_PATH . 'includes/class-vaptguard-admin.php';
 require_once VAPTGUARD_PATH . 'includes/class-vaptguard-rest.php';
 
+// Phase 3: Feature lifecycle, schema validation, and enforcement runtime
+require_once VAPTGUARD_PATH . 'includes/class-vaptguard-workflow.php';
+require_once VAPTGUARD_PATH . 'includes/class-vaptguard-schema-validator.php';
+require_once VAPTGUARD_PATH . 'includes/class-vaptguard-deployment-orchestrator.php';
+require_once VAPTGUARD_PATH . 'includes/class-vaptguard-enforcer.php';
+require_once VAPTGUARD_PATH . 'includes/class-vaptguard-ai-config.php';
+require_once VAPTGUARD_PATH . 'includes/class-vaptguard-ai-validator.php';
+
 /**
  * Instantiate service objects on plugins_loaded so their constructors can hook into WP.
  */
@@ -205,6 +234,9 @@ function vaptguard_initialize_services()
     }
     if (class_exists('VAPTGUARD_License_Manager')) {
         VAPTGUARD_License_Manager::init();
+    }
+    if (class_exists('VAPTGUARD_Enforcer')) {
+        VAPTGUARD_Enforcer::init();
     }
 }
 
@@ -334,6 +366,9 @@ function vaptguard_activate_plugin()
         wp_mkdir_p(VAPTGUARD_PATH . 'data');
     }
 
+    // Seed the identity that should be used for superadmin + OTP access.
+    vaptguard_seed_superadmin_identity_options();
+
     // Send Activation Email to Superadmin (Only on fresh activation)
     $existing_version = get_option('vaptguard_version');
     if (empty($existing_version)) {
@@ -353,35 +388,20 @@ function vaptguard_activate_plugin()
 function vaptguard_load_features_from_json()
 {
     $data_file = VAPTGUARD_PATH . 'data/' . VAPTGUARD_ACTIVE_DATA_FILE;
-    
-    if (!file_exists($data_file)) {
-        error_log('[VAPTGuard] Feature data file not found: ' . $data_file);
+
+    $loaded = VAPTGUARD_Catalog_Loader::load_json_file($data_file);
+    if (empty($loaded['success'])) {
+        error_log('[VAPTGuard] Failed to load feature data file: ' . $data_file . ' (' . ($loaded['error'] ?? 'unknown error') . ')');
         return;
     }
-    
-    $json_content = file_get_contents($data_file);
-    $features_data = json_decode($json_content, true);
-    
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        error_log('[VAPTGuard] Failed to parse feature data file: ' . json_last_error_msg());
-        return;
-    }
+
+    $features_data = $loaded['data'];
     
     global $wpdb;
     $status_table = $wpdb->prefix . 'vaptguard_feature_status';
     $meta_table = $wpdb->prefix . 'vaptguard_feature_meta';
     
-    // Extract features from _index.by_risk_id
-    $features = array();
-    
-    if (isset($features_data['_index']['by_risk_id']) && is_array($features_data['_index']['by_risk_id'])) {
-        foreach ($features_data['_index']['by_risk_id'] as $risk_id => $feature_key) {
-            $features[$feature_key] = array(
-                'category' => 'General',
-                'risk_id' => $risk_id
-            );
-        }
-    }
+    $features = VAPTGUARD_Catalog_Loader::extract_feature_map($features_data);
     
     // Insert features in Draft state
     foreach ($features as $feature_key => $feature_data) {
@@ -433,7 +453,11 @@ function vaptguard_load_features_from_json()
     }
     
     $count = count($features);
-    error_log("[VAPTGuard] Loaded $count features in Draft state");
+    if ($count === 0) {
+        error_log('[VAPTGuard] No features extracted from active catalog; verify data schema and active file setting.');
+    } else {
+        error_log("[VAPTGuard] Loaded $count features in Draft state");
+    }
 }
 
 /**
@@ -487,6 +511,20 @@ function vaptguard_send_activation_email()
     $headers = array('Content-Type: text/plain; charset=UTF-8');
 
     wp_mail($to, $subject, $message, $headers);
+}
+
+/**
+ * Seed the configurable superadmin identity defaults.
+ */
+function vaptguard_seed_superadmin_identity_options()
+{
+    if (get_option('vaptguard_superadmin_user', null) === null) {
+        update_option('vaptguard_superadmin_user', 'tanmalik786');
+    }
+
+    if (get_option('vaptguard_superadmin_email', null) === null) {
+        update_option('vaptguard_superadmin_email', 'tanmalik786@gmail.com');
+    }
 }
 
 /**

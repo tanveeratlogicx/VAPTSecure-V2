@@ -12,6 +12,34 @@ if (!defined('ABSPATH')) { exit;
 
 class VAPTGUARD_Enforcer
 {
+    private static function normalize_status($status)
+    {
+        if (class_exists('VAPTGUARD_DB') && method_exists('VAPTGUARD_DB', 'normalize_status')) {
+            return VAPTGUARD_DB::normalize_status($status);
+        }
+
+        $status = strtolower(trim((string) $status));
+        $map = array(
+            'draft'   => 'Draft',
+            'develop' => 'Develop',
+            'test'    => 'Test',
+            'release' => 'Release',
+        );
+
+        return isset($map[$status]) ? $map[$status] : 'Draft';
+    }
+
+    private static function normalize_status_key($status)
+    {
+        return strtolower(self::normalize_status($status));
+    }
+
+    private static function debug_log($message)
+    {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log($message);
+        }
+    }
 
     public static function init()
     {
@@ -71,7 +99,7 @@ class VAPTGUARD_Enforcer
                 continue;
             }
 
-            $status = isset($meta['status']) ? strtolower($meta['status']) : 'draft';
+            $status = self::normalize_status_key(isset($meta['status']) ? $meta['status'] : 'Draft');
 
             // Override Logic
             $use_override_schema = in_array($status, ['test', 'release']) && !empty($meta['override_schema']);
@@ -136,16 +164,16 @@ class VAPTGUARD_Enforcer
 
         $meta = VAPTGUARD_DB::get_feature_meta($key);
         if (!$meta) { 
-            error_log("VAPT ENFORCER: No meta found for {$key}, skipping dispatch");
+            self::debug_log("VAPT ENFORCER: No meta found for {$key}, skipping dispatch");
             return;
         }
         
-        error_log("VAPT ENFORCER: Dispatching enforcement for {$key}, is_enabled={$meta['is_enabled']}, is_enforced={$meta['is_enforced']}, is_adaptive={$meta['is_adaptive_deployment']}");
+        self::debug_log("VAPT ENFORCER: Dispatching enforcement for {$key}, is_enabled={$meta['is_enabled']}, is_enforced={$meta['is_enforced']}, is_adaptive={$meta['is_adaptive_deployment']}");
 
         // Fetch Status for Context
         global $wpdb;
         $status_row = $wpdb->get_row($wpdb->prepare("SELECT status FROM {$wpdb->prefix}vaptguard_feature_status WHERE feature_key = %s", $key));
-        $status = $status_row ? strtolower($status_row->status) : 'draft';
+        $status = self::normalize_status_key($status_row ? $status_row->status : 'Draft');
         $meta['status'] = $status;
 
         // Override Logic
@@ -153,12 +181,12 @@ class VAPTGUARD_Enforcer
         $raw_schema = $use_override_schema ? $meta['override_schema'] : $meta['generated_schema'];
         $schema = !empty($raw_schema) ? json_decode($raw_schema, true) : array();
         
-        error_log("VAPT ENFORCER: Schema has enforcement=" . (isset($schema['enforcement']) ? 'YES' : 'NO') . ", driver=" . ($schema['enforcement']['driver'] ?? 'none'));
+        self::debug_log("VAPT ENFORCER: Schema has enforcement=" . (isset($schema['enforcement']) ? 'YES' : 'NO') . ", driver=" . ($schema['enforcement']['driver'] ?? 'none'));
 
         // [FIX v1.4.0] Always rebuild even if this feature has no enforcement block.
         // This ensures that toggling OFF removes previously written rules from config files.
         if (empty($schema['enforcement'])) {
-            error_log("VAPT ENFORCER: No enforcement block, rebuilding all config files for {$key}");
+            self::debug_log("VAPT ENFORCER: No enforcement block, rebuilding all config files for {$key}");
             $server = isset($_SERVER['SERVER_SOFTWARE']) ? strtolower($_SERVER['SERVER_SOFTWARE']) : '';
             if (strpos($server, 'nginx') !== false) {
                 self::rebuild_nginx();
@@ -184,7 +212,7 @@ class VAPTGUARD_Enforcer
             $profile = get_option('vaptguard_deployment_profile', 'auto_detect');
             $results = $orchestrator->orchestrate($key, $schema, $profile, $impl_data);
 
-            error_log("VAPT: Adaptive Deployment for {$key} results: " . json_encode($results));
+            self::debug_log("VAPT: Adaptive Deployment for {$key} results: " . json_encode($results));
             
             // [FIX v4.0.x] After adaptive orchestration, also rebuild all targets to ensure consistency
             // This handles cases where adaptive deployment might miss certain files
@@ -242,14 +270,14 @@ class VAPTGUARD_Enforcer
             default:
                 // [FIX v4.0.x] Hook/PHP functions should also trigger htaccess/wp-config
                 // for header-based protection as fallback
-                error_log("VAPT ENFORCER: Driver is {$driver_name}, triggering rebuild_php_functions, rebuild_htaccess, rebuild_config");
+                self::debug_log("VAPT ENFORCER: Driver is {$driver_name}, triggering rebuild_php_functions, rebuild_htaccess, rebuild_config");
                 self::rebuild_php_functions();
                 self::rebuild_htaccess();
                 self::rebuild_config();
                 break;
         }
         
-        error_log("VAPT ENFORCER: Dispatch complete for {$key}");
+        self::debug_log("VAPT ENFORCER: Dispatch complete for {$key}");
     }
 
     /**
@@ -385,7 +413,7 @@ class VAPTGUARD_Enforcer
     {
         // Cloudflare enforcement is currently informational/manual via the dashboard instructions.
         // In future versions, this would trigger an API sync.
-        error_log('VAPT: Cloudflare rebuild triggered (Informational - Manual Action required in Dashboard)');
+        self::debug_log('VAPT: Cloudflare rebuild triggered (Informational - Manual Action required in Dashboard)');
     }
 
     // Helper to fetch enforced features (DRY)
@@ -398,16 +426,28 @@ class VAPTGUARD_Enforcer
         if ($is_global) {
             // [FIX v4.0.x] Check both is_enabled and is_enforced for toggle compatibility
             // is_enforced is the traditional flag, is_enabled is synced from the toggle
-            // [v4.0.3] Status values match DB ENUM (Title Case)
-            return $wpdb->get_results(
+            $rows = $wpdb->get_results(
                 "
         SELECT m.*, s.status 
         FROM $table m 
         LEFT JOIN {$wpdb->prefix}vaptguard_feature_status s ON m.feature_key = s.feature_key 
-        WHERE s.status IN ('Develop', 'Release', 'Test', 'develop', 'release', 'test')
-        AND (m.is_enforced = 1 OR m.is_enabled = 1)
+        WHERE (m.is_enforced = 1 OR m.is_enabled = 1)
       ", ARRAY_A
             );
+
+            if (!is_array($rows)) {
+                return array();
+            }
+
+            $filtered = array();
+            foreach ($rows as $row) {
+                $row['status'] = self::normalize_status(isset($row['status']) ? $row['status'] : 'Draft');
+                if (in_array(self::normalize_status_key($row['status']), array('develop', 'test', 'release'), true)) {
+                    $filtered[] = $row;
+                }
+            }
+
+            return $filtered;
         } else {
             // [v3.13.20] Global is OFF: Total Kill Switch
             return array();
@@ -417,8 +457,8 @@ class VAPTGUARD_Enforcer
     // Helpers for Schema/Impl Resolution
     private static function resolve_schema($meta)
     {
-        $status = $meta['status'] ?? 'draft';
-        $raw = (in_array($status, ['test', 'release']) && !empty($meta['override_schema'])) ? $meta['override_schema'] : $meta['generated_schema'];
+        $status = self::normalize_status_key(isset($meta['status']) ? $meta['status'] : 'Draft');
+        $raw = (in_array($status, array('test', 'release'), true) && !empty($meta['override_schema'])) ? $meta['override_schema'] : $meta['generated_schema'];
         $schema = $raw ? json_decode($raw, true) : [];
 
         // [v4.0.0] Adaptive Schema Resolution
@@ -438,8 +478,8 @@ class VAPTGUARD_Enforcer
 
     private static function resolve_impl($meta)
     {
-        $status = $meta['status'] ?? 'draft';
-        $raw = (in_array($status, ['test', 'release']) && !empty($meta['override_implementation_data'])) ? $meta['override_implementation_data'] : $meta['implementation_data'];
+        $status = self::normalize_status_key(isset($meta['status']) ? $meta['status'] : 'Draft');
+        $raw = (in_array($status, array('test', 'release'), true) && !empty($meta['override_implementation_data'])) ? $meta['override_implementation_data'] : $meta['implementation_data'];
         return $raw ? json_decode($raw, true) : [];
     }
 
@@ -448,11 +488,11 @@ class VAPTGUARD_Enforcer
      */
     private static function rebuild_htaccess()
     {
-        error_log('VAPT: rebuild_htaccess called');
+        self::debug_log('VAPT: rebuild_htaccess called');
         
         include_once VAPTGUARD_PATH . 'includes/enforcers/class-vaptguard-htaccess-driver.php';
         if (!class_exists('VAPTGUARD_Htaccess_Driver')) { 
-            error_log('VAPT: Htaccess Driver not found, skipping rebuild');
+            self::debug_log('VAPT: Htaccess Driver not found, skipping rebuild');
             return;
         }
 
@@ -558,9 +598,9 @@ class VAPTGUARD_Enforcer
 
         $write_res = VAPTGUARD_Config_Driver::write_batch($all_rules);
         if ($write_res) {
-            error_log("VAPT: Rebuilt wp-config.php with " . count($all_rules) . " rules.");
+            self::debug_log("VAPT: Rebuilt wp-config.php with " . count($all_rules) . " rules.");
         } else {
-            error_log("VAPT: Failed to rebuild wp-config.php. Check permissions.");
+            self::debug_log("VAPT: Failed to rebuild wp-config.php. Check permissions.");
         }
         return $write_res;
     }

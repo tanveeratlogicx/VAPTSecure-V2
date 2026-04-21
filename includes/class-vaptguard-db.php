@@ -10,6 +10,33 @@ if (! defined('ABSPATH')) {
 
 class VAPTGUARD_DB
 {
+    /**
+     * Normalize a status value to the canonical DB form.
+     */
+    public static function normalize_status($status)
+    {
+        $status = strtolower(trim((string) $status));
+        $map = array(
+            'available'   => 'Draft',
+            'draft'       => 'Draft',
+            'develop'     => 'Develop',
+            'in_progress' => 'Develop',
+            'testing'     => 'Test',
+            'test'        => 'Test',
+            'implemented' => 'Release',
+            'release'     => 'Release',
+        );
+
+        return isset($map[$status]) ? $map[$status] : ucfirst($status);
+    }
+
+    /**
+     * Normalize a status value to the canonical lookup key.
+     */
+    public static function normalize_status_key($status)
+    {
+        return strtolower(self::normalize_status($status));
+    }
 
     /**
      * Get all feature statuses
@@ -18,11 +45,19 @@ class VAPTGUARD_DB
     {
         global $wpdb;
         $table = $wpdb->prefix . 'vaptguard_feature_status';
-        $results = $wpdb->get_results("SELECT * FROM $table", OBJECT_K);
+        $results = $wpdb->get_results("SELECT feature_key, status FROM $table", ARRAY_A);
 
-        $statuses = [];
+        $statuses = array();
+        if (!is_array($results)) {
+            return $statuses;
+        }
+
         foreach ($results as $row) {
-            $statuses[$row['feature_key']] = $row['status'];
+            if (!is_array($row) || empty($row['feature_key'])) {
+                continue;
+            }
+
+            $statuses[$row['feature_key']] = self::normalize_status($row['status'] ?? 'Draft');
         }
         return $statuses;
     }
@@ -35,9 +70,10 @@ class VAPTGUARD_DB
         global $wpdb;
         $table = $wpdb->prefix . 'vaptguard_feature_status';
 
+        $status = self::normalize_status($status);
         $data = array(
-        'feature_key' => $key,
-        'status'      => $status,
+            'feature_key' => $key,
+            'status'      => $status,
         );
 
         if ($status === 'Release') {
@@ -70,7 +106,11 @@ class VAPTGUARD_DB
     {
         global $wpdb;
         $table = $wpdb->prefix . 'vaptguard_feature_status';
-        return $wpdb->get_results("SELECT * FROM $table", ARRAY_A);
+        $rows = $wpdb->get_results("SELECT * FROM $table", ARRAY_A);
+        foreach ($rows as &$row) {
+            $row['status'] = self::normalize_status($row['status']);
+        }
+        return $rows;
     }
 
     /**

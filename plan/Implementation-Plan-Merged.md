@@ -3,6 +3,26 @@
 ## Mission
 Clone VAPTSecure Clean as a fully functional independent plugin "VAPTGuard Pro" that can coexist with the original on the same WordPress installation.
 
+## Canonical Datasource Contract
+
+All implementation work uses exactly one datasource:
+- `data/Updated_Feature_List_159_Adaptive.json`
+
+This file is the product-security contract for this implementation:
+- `meta.version`: `3.1.0`
+- `meta.source`: `VAPT Builder Adaptive Core`
+- `meta.schema`: `A+ Adaptive Layout`
+- `meta.total_features`: `159`
+- `meta.generated_at`: `2026-04-02`
+- `meta.owasp_standard`: `OWASP Top 10:2025`
+
+Required normalization behavior:
+- Read metadata from `meta.*` (not top-level root fields).
+- Normalize `granular_controls.reference = _rate_limiting_controls` to top-level `rate_limiting_controls`.
+- Treat `form_builder_support.supported_form_builders` and `form_builder_support.wordpress_core_forms` as different shapes.
+- Do not block feature generation when `owasp` is missing (73/159 entries).
+- Preserve both `RiskID` and `id` as stable keys for implementation and reporting.
+
 ---
 
 ## PART 1: FEATURE LIFECYCLE (4 States)
@@ -15,7 +35,7 @@ Draft ──► Develop ──► Test ──► Release
 
 | State | Context | Description |
 |-------|---------|-------------|
-| **Draft** | - | Feature exists in 159 features list (from data file) |
+| **Draft** | - | Feature exists in canonical 159-feature datasource |
 | **Develop** | Global | Has AI brief + schema, changes affect global context |
 | **Test** | Local | Isolated - changes stay local to feature only |
 | **Release** | - | Ready for client builds |
@@ -286,13 +306,13 @@ if ($screen->id === 'toplevel_page_vaptguard-domain-admin') {
 
 **Purpose**: Plugin foundation - activate, create DB tables, register menus
 
-> Features loaded from data file start as **Draft** state
+> Features loaded from canonical datasource start as **Draft** state
 
 **Deliverables**:
 - `vaptguard.php` - Main plugin
 - `includes/class-vaptguard-db.php` - Database handler
 - `includes/class-vaptguard-auth.php` - Auth stub
-- Data file (already present)
+- Canonical data file `data/Updated_Feature_List_159_Adaptive.json` (already present)
 
 **Test Criteria**:
 - [ ] Plugin activates without errors
@@ -371,14 +391,21 @@ if ($screen->id === 'toplevel_page_vaptguard-domain-admin') {
 
 ## DATA FILE
 
-### Feature-List-159-Adaptive-Updated.json
+### Updated_Feature_List_159_Adaptive.json
 - 159 features with full definitions
 - Categories, severity, OWASP mappings
 - test_method, verification_steps, remediation
-- UI schemas baked in (no separate files needed)
+- WordPress surface maps: `wp_path_patterns`, `wp_paths_flat`
+- Shared control blueprints: `rate_limiting_controls`, `form_builder_support`
+
+### Implementation Rules From Data File
+- Use `verification_steps` as QA acceptance criteria and evidence prompts.
+- Use `remediation` as default hardening guidance and safe autofix recommendations.
+- Group and prioritize by `severity`, `category`, and `owasp` when present.
+- Prefer shared engines: rate limiting, endpoint matching, sanitization/validation, logging, policy registry, rule mapping, evidence export.
 
 ---
 
 *Ready for implementation*
-*Last updated: April 15, 2026*
+*Last updated: April 20, 2026*
 *Complete Dual-Interface Platform - VAPTGuard Pro*

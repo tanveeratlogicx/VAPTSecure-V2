@@ -16,6 +16,13 @@ class VAPTGUARD_Deployment_Orchestrator
     private $deployers = [];
     private $deployment_log = [];
 
+    private static function debug_log($message)
+    {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log($message);
+        }
+    }
+
     public function __construct()
     {
         include_once VAPTGUARD_PATH . 'includes/class-vaptguard-environment-detector.php';
@@ -55,12 +62,12 @@ class VAPTGUARD_Deployment_Orchestrator
         // 1. Resolve Platform Matrix
         $platform_matrix = $schema['platform_matrix'] ?? $this->derive_matrix_from_legacy($schema, $impl_data);
         
-        error_log("VAPT ORCHESTRATOR: Processing {$risk_id} with profile={$profile}, targets=" . count($platform_matrix));
+        self::debug_log("VAPT ORCHESTRATOR: Processing {$risk_id} with profile={$profile}, targets=" . count($platform_matrix));
 
         // 2. Select Targets
         $targets = $this->resolve_targets($profile, $env, $platform_matrix);
         
-        error_log("VAPT ORCHESTRATOR: Selected targets for {$risk_id}: " . implode(', ', $targets));
+        self::debug_log("VAPT ORCHESTRATOR: Selected targets for {$risk_id}: " . implode(', ', $targets));
 
         // 3. Execute Deployment
         foreach ($targets as $platform) {
@@ -79,7 +86,7 @@ class VAPTGUARD_Deployment_Orchestrator
                     $is_enabled = filter_var($impl_data[$auto_key], FILTER_VALIDATE_BOOLEAN);
                 }
                 
-                error_log("VAPT ORCHESTRATOR: Deploying {$risk_id} to {$platform}, enabled=" . ($is_enabled ? 'true' : 'false'));
+                self::debug_log("VAPT ORCHESTRATOR: Deploying {$risk_id} to {$platform}, enabled=" . ($is_enabled ? 'true' : 'false'));
 
                 $implementation = $platform_matrix[$platform];
                 $res = $deployer->deploy($risk_id, $implementation, $is_enabled);
@@ -88,13 +95,13 @@ class VAPTGUARD_Deployment_Orchestrator
                     'success' => false,
                     'error' => $res->get_error_message()
                     ];
-                    error_log("VAPT ORCHESTRATOR: Deploy failed for {$risk_id} -> {$platform}: " . $res->get_error_message());
+                    self::debug_log("VAPT ORCHESTRATOR: Deploy failed for {$risk_id} -> {$platform}: " . $res->get_error_message());
                 } else {
                     $results[$platform] = array_merge(['success' => true], $res);
-                    error_log("VAPT ORCHESTRATOR: Deploy success for {$risk_id} -> {$platform}");
+                    self::debug_log("VAPT ORCHESTRATOR: Deploy success for {$risk_id} -> {$platform}");
                 }
             } else {
-                error_log("VAPT ORCHESTRATOR: Skipping {$platform} - no deployer or no implementation matrix");
+                self::debug_log("VAPT ORCHESTRATOR: Skipping {$platform} - no deployer or no implementation matrix");
             }
         }
 
@@ -248,7 +255,7 @@ class VAPTGUARD_Deployment_Orchestrator
         $target = $enforcement['target'] ?? 'root';
 
         if (empty($mappings)) { 
-            error_log("VAPT ORCHESTRATOR: No mappings found in schema for derive_matrix");
+            self::debug_log("VAPT ORCHESTRATOR: No mappings found in schema for derive_matrix");
             return $matrix;
         }
 
@@ -291,7 +298,7 @@ class VAPTGUARD_Deployment_Orchestrator
             ];
             $raw_code = str_replace(array_keys($replacements), array_values($replacements), $raw_code);
             
-            error_log("VAPT ORCHESTRATOR: Extracted htaccess rules length: " . strlen($raw_code));
+            self::debug_log("VAPT ORCHESTRATOR: Extracted htaccess rules length: " . strlen($raw_code));
 
             if (!empty($raw_code)) {
                 $matrix['apache_htaccess'] = ['rules' => $raw_code, 'target' => $target];

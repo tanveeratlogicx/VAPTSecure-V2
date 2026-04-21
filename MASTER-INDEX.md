@@ -79,7 +79,11 @@ Replace all occurrences:
 
 ## Data File
 
-`data/Feature-List-159-Adaptive-Updated.json` - Already present, no copy needed.
+Primary catalog:
+`data/Updated_Feature_List_159_Adaptive.json`
+
+Backward compatibility catalog:
+`data/Feature-List-159-Adaptive-Updated.json`
 
 ---
 
