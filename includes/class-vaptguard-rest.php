@@ -2236,6 +2236,75 @@ class VAPTGUARD_REST extends VAPTGUARD_REST_Base
     }
 
     /**
+     * Resolve valid column keys from the active catalog feature schema.
+     * Falls back to the canonical A+ adaptive core columns if discovery fails.
+     */
+    private function get_valid_datafile_column_keys()
+    {
+        $fallback_keys = array('RiskID', 'id', 'name', 'description', 'category', 'severity', 'owasp', 'test_method', 'verification_steps', 'remediation', 'granular_controls');
+        $runtime_excluded = array(
+            'key', 'label',
+            'status', 'normalized_status', 'implemented_at', 'assigned_to', 'has_history',
+            'source_file', 'exists_in_multiple_files',
+            'include_test_method', 'include_verification', 'include_verification_engine', 'include_verification_guidance',
+            'is_enabled', 'is_enforced', 'is_adaptive_deployment',
+            'wireframe_url', 'dev_instruct', 'generated_schema', 'implementation_data',
+            'active_enforcer', 'is_overridden',
+            'root_design_prompt', 'root_ai_agent_instructions', 'root_global_settings'
+        );
+
+        $active_file = defined('VAPTGUARD_ACTIVE_DATA_FILE') ? VAPTGUARD_ACTIVE_DATA_FILE : 'Updated_Feature_List_159_Adaptive.json';
+        $json_path = VAPTGUARD_PATH . 'data/' . sanitize_file_name($active_file);
+        if (!file_exists($json_path)) {
+            return $fallback_keys;
+        }
+
+        $raw_data = json_decode(file_get_contents($json_path), true);
+        if (!is_array($raw_data)) {
+            return $fallback_keys;
+        }
+
+        $feature_rows = array();
+        if (isset($raw_data['features']) && is_array($raw_data['features'])) {
+            $feature_rows = $raw_data['features'];
+        } elseif (isset($raw_data['wordpress_vapt']) && is_array($raw_data['wordpress_vapt'])) {
+            $feature_rows = $raw_data['wordpress_vapt'];
+        }
+
+        if (empty($feature_rows)) {
+            return $fallback_keys;
+        }
+
+        $discovered = array();
+        foreach ($feature_rows as $feature) {
+            if (!is_array($feature)) {
+                continue;
+            }
+            foreach (array_keys($feature) as $key) {
+                if (in_array($key, $runtime_excluded, true)) {
+                    continue;
+                }
+                $discovered[$key] = true;
+            }
+        }
+
+        $discovered_keys = array_keys($discovered);
+        if (empty($discovered_keys)) {
+            return $fallback_keys;
+        }
+
+        $prioritized = array_values(array_filter($fallback_keys, function ($key) use ($discovered_keys) {
+            return in_array($key, $discovered_keys, true);
+        }));
+        $remaining = array_values(array_filter($discovered_keys, function ($key) use ($prioritized) {
+            return !in_array($key, $prioritized, true);
+        }));
+        sort($remaining, SORT_STRING);
+
+        return array_values(array_unique(array_merge($prioritized, $remaining)));
+    }
+
+    /**
      * Save column preferences to WordPress Options Table
      */
     public function save_column_preferences($request)
@@ -2247,8 +2316,8 @@ class VAPTGUARD_REST extends VAPTGUARD_REST_Base
         $column_order = isset($body['column_order']) ? $body['column_order'] : array();
         $visible_cols = isset($body['visible_cols']) ? $body['visible_cols'] : array();
 
-        // Filter out invalid fields (like 'title') - only allow valid data file fields
-        $valid_keys = array('RiskID', 'id', 'name', 'description', 'category', 'severity', 'owasp', 'test_method', 'verification_steps', 'remediation');
+        // Filter out runtime/internal fields - allow only active datafile-derived feature keys
+        $valid_keys = $this->get_valid_datafile_column_keys();
         $column_order = array_values(array_filter($column_order, function($key) use ($valid_keys) {
             return in_array($key, $valid_keys);
         }));

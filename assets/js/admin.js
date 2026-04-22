@@ -1427,13 +1427,33 @@ var vaptLog = window.vaptLog || {
 
   // Field Mapping Modal Component
   const FieldMappingModal = ({ isOpen, onClose, fieldMapping, setFieldMapping, allKeys }) => {
+    const mappingTargetKeys = [
+      'description', 'severity',
+      'ui_layout', 'components', 'actions',
+      'available_platforms', 'platform_implementations',
+      'operational_notes', 'verification_steps', 'verification_command', 'verification_expected',
+      'risk_id', 'title', 'category', 'owasp_cwe', 'owasp_top_10_2025'
+    ];
+
+    // Defensive de-duplication (case/whitespace normalized) for dropdown source fields
+    const normalizedKeyMap = new Map();
+    (Array.isArray(allKeys) ? allKeys : []).forEach((rawKey) => {
+      const cleaned = String(rawKey || '').trim();
+      if (!cleaned) return;
+      const normalized = cleaned.toLowerCase();
+      if (!normalizedKeyMap.has(normalized)) {
+        normalizedKeyMap.set(normalized, cleaned);
+      }
+    });
+    const sourceFieldKeys = Array.from(normalizedKeyMap.values()).sort((a, b) => a.localeCompare(b));
+
     // Helper to generate SelectControl for a mapping field
     const renderMappingSelect = (label, key) => {
       return el(SelectControl, {
         id: `vapt-mapping-select-${key}`,
         label: label,
         value: fieldMapping[key] || '',
-        options: [{ label: __('--- Select Source Field ---', 'vaptguard'), value: '' }, ...allKeys.map(k => ({ label: k, value: k }))],
+        options: [{ label: __('--- Select Source Field ---', 'vaptguard'), value: '' }, ...sourceFieldKeys.map(k => ({ label: k, value: k }))],
         onChange: (val) => setFieldMapping({ ...fieldMapping, [key]: val }),
         style: { marginBottom: '15px' }
       });
@@ -1448,7 +1468,7 @@ var vaptLog = window.vaptLog || {
       const findBestMatch = (keywords, targetFieldName = '') => {
         const matches = [];
 
-        allKeys.forEach(field => {
+        sourceFieldKeys.forEach(field => {
           const fieldLower = field.toLowerCase();
           let bestScore = 0;
           let bestKeyword = '';
@@ -1810,7 +1830,26 @@ var vaptLog = window.vaptLog || {
                 width: 'fit-content'
               },
               title: __('Total number of mapping fields in the modal', 'vaptguard')
-            }, sprintf(__('Total Fields: %d', 'vaptguard'), 16))
+            }, sprintf(__('Mapping Targets: %d', 'vaptguard'), mappingTargetKeys.length)),
+            el('div', {
+              style: {
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '2px 6px',
+                fontSize: '11px',
+                fontWeight: '600',
+                color: '#0f766e',
+                background: '#ecfdf5',
+                border: '1px solid #99f6e4',
+                borderRadius: '4px',
+                height: '22px',
+                whiteSpace: 'nowrap',
+                marginTop: '4px',
+                width: 'fit-content'
+              },
+              title: __('Unique source fields derived from current datafile', 'vaptguard')
+            }, sprintf(__('Source Fields: %d', 'vaptguard'), sourceFieldKeys.length))
           ]),
           el('div', { id: 'vapt-mapping-modal-actions', style: { display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 } }, [
             el(Button, { id: 'vapt-button-automap', isSecondary: true, onClick: handleAutoMap, style: { height: '32px' } }, __('Auto Map', 'vaptguard')),
@@ -4246,6 +4285,55 @@ var vaptLog = window.vaptLog || {
     return path.split('.').reduce((prev, curr) => (prev && prev[curr] !== undefined) ? prev[curr] : undefined, obj);
   };
 
+  // Canonical source fields from adaptive catalogs (datafile-first, runtime fields excluded)
+  const DEFAULT_VISIBLE_DATAFILE_COLUMNS = ['RiskID', 'id', 'name', 'category', 'severity', 'owasp', 'test_method', 'verification_steps', 'remediation', 'description'];
+  const PRIORITIZED_DATAFILE_KEYS = [...DEFAULT_VISIBLE_DATAFILE_COLUMNS, 'granular_controls'];
+  const RUNTIME_FEATURE_KEYS = new Set([
+    'key', 'label',
+    'status', 'normalized_status', 'implemented_at', 'assigned_to', 'has_history',
+    'source_file', 'exists_in_multiple_files',
+    'include_test_method', 'include_verification', 'include_verification_engine', 'include_verification_guidance',
+    'is_enabled', 'is_enforced', 'is_adaptive_deployment',
+    'wireframe_url', 'dev_instruct', 'generated_schema', 'implementation_data',
+    'active_enforcer', 'is_overridden',
+    'root_design_prompt', 'root_ai_agent_instructions', 'root_global_settings'
+  ]);
+
+  const buildDatafileFieldKeys = (rows = [], options = {}) => {
+    const includeNested = !!(options && options.includeNested);
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return [...DEFAULT_VISIBLE_DATAFILE_COLUMNS];
+    }
+
+    const keys = new Set();
+    const flattenObjectKeys = (obj, prefix = '', depth = 0) => {
+      if (!obj || typeof obj !== 'object' || Array.isArray(obj) || depth > 2) return;
+      Object.keys(obj).forEach((k) => {
+        const path = prefix ? `${prefix}.${k}` : k;
+        keys.add(path);
+        flattenObjectKeys(obj[k], path, depth + 1);
+      });
+    };
+
+    rows.forEach((row) => {
+      if (!row || typeof row !== 'object') return;
+      Object.keys(row).forEach((key) => {
+        if (RUNTIME_FEATURE_KEYS.has(key)) return;
+        keys.add(key);
+        // Include nested keys for object-based source fields (e.g., granular_controls.reference)
+        if (includeNested && row[key] && typeof row[key] === 'object' && !Array.isArray(row[key])) {
+          flattenObjectKeys(row[key], key, 1);
+        }
+      });
+    });
+
+    const discovered = Array.from(keys);
+    const prioritized = PRIORITIZED_DATAFILE_KEYS.filter((k) => discovered.includes(k));
+    const remaining = discovered.filter((k) => !prioritized.includes(k)).sort();
+    const merged = [...prioritized, ...remaining];
+    return merged.length > 0 ? merged : [...DEFAULT_VISIBLE_DATAFILE_COLUMNS];
+  };
+
   // Helper to extract granular content based on mapping or fallback
   const getMappedContent = (obj, mappingKey, fallbackKey, fieldMapping) => {
     if (fieldMapping && fieldMapping[mappingKey]) {
@@ -4514,13 +4602,13 @@ var vaptLog = window.vaptLog || {
   const FeatureList = ({
     features, schema, updateFeature, loading, dataFiles, selectedFile, onSelectFile, onUpload, allFiles, hiddenFiles, onUpdateHiddenFiles, manageSourcesStatus, isManageModalOpen, setIsManageModalOpen, onRemoveFile, designPromptConfig, setDesignPromptConfig,
     historyFeature, setHistoryFeature, designFeature, setDesignFeature, transitioning, setTransitioning, isPromptConfigModalOpen, setIsPromptConfigModalOpen, isMappingModalOpen, setIsMappingModalOpen,
-    sortBySource, setSortBySource, sortSourceDirection, setSortSourceDirection,
+    sortBySource, setSortBySource, sortSourceDirection, setSortSourceDirection, fieldMapping, setFieldMapping,
     environmentProfile, setAlertState
   }) => {
     const [confirmingFile, setConfirmingFile] = useState(null);
     // Default column order and visible columns - will be overridden by API data if available
-    const [columnOrder, setColumnOrder] = useState(['RiskID', 'id', 'name', 'category', 'severity', 'owasp', 'test_method', 'verification_steps', 'remediation', 'description']);
-    const [visibleCols, setVisibleCols] = useState(['RiskID', 'id', 'name', 'category', 'severity', 'owasp', 'test_method', 'verification_steps', 'remediation', 'description']);
+    const [columnOrder, setColumnOrder] = useState([...DEFAULT_VISIBLE_DATAFILE_COLUMNS]);
+    const [visibleCols, setVisibleCols] = useState([...DEFAULT_VISIBLE_DATAFILE_COLUMNS]);
     const [colPrefsLoaded, setColPrefsLoaded] = useState(false);
 
     // Load column preferences from WordPress Options Table via API
@@ -4614,25 +4702,6 @@ var vaptLog = window.vaptLog || {
     const [sortBy, setSortBy] = useState(() => localStorage.getItem('vaptguard_sort_by') || 'name');
     const [sortOrder, setSortOrder] = useState(() => localStorage.getItem('vaptguard_sort_order') || 'asc');
     const [searchQuery, setSearchQuery] = useState(() => localStorage.getItem('vaptguard_search_query') || '');
-    const [fieldMapping, setFieldMapping] = useState({ test_method: '', verification_steps: '', verification_command: '', verification_expected: '', verification_engine: '' });
-
-
-    // Load/Save Field Mapping per File
-    useEffect(() => {
-      if (!selectedFile) return;
-      const saved = localStorage.getItem(`vaptguard_field_mapping_${selectedFile}`);
-      if (saved) {
-        setFieldMapping(JSON.parse(saved));
-      } else {
-        setFieldMapping({ test_method: '', verification_steps: '', verification_command: '', verification_expected: '', verification_engine: '' });
-      }
-    }, [selectedFile]);
-
-    useEffect(() => {
-      if (!selectedFile) return;
-      localStorage.setItem(`vaptguard_field_mapping_${selectedFile}`, JSON.stringify(fieldMapping));
-    }, [fieldMapping, selectedFile]);
-
     const toggleSort = (key) => {
       if (sortBy === key) {
         setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -4725,13 +4794,7 @@ var vaptLog = window.vaptLog || {
       });
 
     // Collect all available keys from Feature node data (dynamic)
-    const defaultKeyOrder = ['RiskID', 'id', 'name', 'category', 'severity', 'owasp', 'test_method', 'verification_steps', 'remediation', 'description', 'granular_controls'];
-    const discoveredFeatureKeys = Array.from(new Set(
-      safeFeatures.flatMap(f => (f && typeof f === 'object') ? Object.keys(f) : [])
-    ));
-    const prioritizedKeys = defaultKeyOrder.filter(k => discoveredFeatureKeys.includes(k));
-    const remainingKeys = discoveredFeatureKeys.filter(k => !defaultKeyOrder.includes(k)).sort();
-    const allKeys = [...prioritizedKeys, ...remainingKeys];
+    const allKeys = buildDatafileFieldKeys(safeFeatures);
 
     const resolveEnforcer = (feature) => {
       const platforms = feature.platform_implementations || {};
@@ -5184,7 +5247,7 @@ var vaptLog = window.vaptLog || {
                     el(Button, {
                       isLink: true, isDestructive: true,
                       onClick: () => {
-                        const defaultFields = ['RiskID', 'id', 'name', 'category', 'severity', 'owasp', 'test_method', 'verification_steps', 'remediation', 'description'];
+                        const defaultFields = [...DEFAULT_VISIBLE_DATAFILE_COLUMNS];
                         setColumnOrder(defaultFields);
                         setVisibleCols(defaultFields);
                       }
@@ -5805,77 +5868,28 @@ var vaptLog = window.vaptLog || {
     });
 
     useEffect(() => {
-      localStorage.setItem('vaptguard_field_mapping', JSON.stringify(fieldMapping));
-    }, [fieldMapping]);
+      if (!selectedFile) return;
+      const savedForFile = localStorage.getItem(`vaptguard_field_mapping_${selectedFile}`);
+      if (savedForFile) {
+        try {
+          setFieldMapping(JSON.parse(savedForFile));
+        } catch (e) {
+          setFieldMapping({});
+        }
+      } else {
+        setFieldMapping({});
+      }
+    }, [selectedFile]);
+
+    useEffect(() => {
+      if (!selectedFile) return;
+      localStorage.setItem(`vaptguard_field_mapping_${selectedFile}`, JSON.stringify(fieldMapping || {}));
+      localStorage.setItem('vaptguard_field_mapping', JSON.stringify(fieldMapping || {}));
+    }, [fieldMapping, selectedFile]);
 
     const allKeys = useMemo(() => {
-      // Collect keys from multiple data sources
-      const sources = [];
-
-      // 1. Features data (existing source)
-      if (features && features.length > 0) {
-        sources.push(...features);
-      }
-
-      // 2. AI Agent Instructions (contains patterns, verification steps, etc.)
-      if (rootAiInstructions && Object.keys(rootAiInstructions).length > 0) {
-        sources.push(rootAiInstructions);
-      }
-
-      // 3. Global Settings (may contain operational context, verification steps)
-      if (rootGlobalSettings && Object.keys(rootGlobalSettings).length > 0) {
-        sources.push(rootGlobalSettings);
-      }
-
-      if (sources.length === 0) return [];
-
-      const flattenKeys = (obj, prefix = '', depth = 0) => {
-        let keys = [];
-        // Increase depth limit to 3 to capture deeper nested keys
-        // This allows us to get keys like patterns.RISK-001.wp_config.verification
-        if (depth > 3) return keys;
-        for (const key in obj) {
-          if (!obj.hasOwnProperty(key)) continue;
-          const newKey = prefix ? `${prefix}.${key}` : key;
-
-          if (typeof obj[key] === 'object' && obj[key] !== null && !Array.isArray(obj[key])) {
-            const childKeys = flattenKeys(obj[key], newKey, depth + 1);
-            // Include child keys
-            if (childKeys.length > 0) keys = keys.concat(childKeys);
-            // Also include the object key itself if it might be used directly
-            // But skip very generic keys like 'patterns' unless they have specific value
-            if (depth < 2 || !['patterns', 'enforcer_key_map', 'bundle_files'].includes(key)) {
-              keys.push(newKey);
-            }
-          } else {
-            // For leaf values, include the key
-            keys.push(newKey);
-          }
-        }
-        return keys;
-      };
-
-      const keys = new Set();
-      sources.forEach(source => {
-        const flat = flattenKeys(source);
-        flat.forEach(k => keys.add(k));
-      });
-
-      // Add some common variations that might not be in the data
-      const additionalKeys = [
-        'operational_notes.context',
-        'testing.verification_steps',
-        'verification_steps',
-        'context',
-        'steps',
-        'verification',
-        'operational_context',
-        'implementation_context'
-      ];
-      additionalKeys.forEach(k => keys.add(k));
-
-      return Array.from(keys).sort();
-    }, [features, rootAiInstructions, rootGlobalSettings]);
+      return buildDatafileFieldKeys(features, { includeNested: true });
+    }, [features]);
 
     // Status Auto-clear helper
     useEffect(() => {
@@ -6485,6 +6499,8 @@ var vaptLog = window.vaptLog || {
             setSortBySource,
             sortSourceDirection,
             setSortSourceDirection,
+            fieldMapping,
+            setFieldMapping,
             environmentProfile,
             setAlertState
           });
