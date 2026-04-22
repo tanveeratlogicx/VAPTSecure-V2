@@ -4724,8 +4724,14 @@ var vaptLog = window.vaptLog || {
         return map[s] || (s.charAt(0).toUpperCase() + s.slice(1).toLowerCase());
       });
 
-    // Collect all available keys from features data - restricted to fields present in data file
-    const allKeys = ['RiskID', 'id', 'name', 'description', 'category', 'severity', 'owasp', 'test_method', 'verification_steps', 'remediation'];
+    // Collect all available keys from Feature node data (dynamic)
+    const defaultKeyOrder = ['RiskID', 'id', 'name', 'category', 'severity', 'owasp', 'test_method', 'verification_steps', 'remediation', 'description', 'granular_controls'];
+    const discoveredFeatureKeys = Array.from(new Set(
+      safeFeatures.flatMap(f => (f && typeof f === 'object') ? Object.keys(f) : [])
+    ));
+    const prioritizedKeys = defaultKeyOrder.filter(k => discoveredFeatureKeys.includes(k));
+    const remainingKeys = discoveredFeatureKeys.filter(k => !defaultKeyOrder.includes(k)).sort();
+    const allKeys = [...prioritizedKeys, ...remainingKeys];
 
     const resolveEnforcer = (feature) => {
       const platforms = feature.platform_implementations || {};
@@ -5178,7 +5184,7 @@ var vaptLog = window.vaptLog || {
                     el(Button, {
                       isLink: true, isDestructive: true,
                       onClick: () => {
-                        const defaultFields = ['title', 'category', 'severity', 'description'];
+                        const defaultFields = ['RiskID', 'id', 'name', 'category', 'severity', 'owasp', 'test_method', 'verification_steps', 'remediation', 'description'];
                         setColumnOrder(defaultFields);
                         setVisibleCols(defaultFields);
                       }
@@ -5602,6 +5608,16 @@ var vaptLog = window.vaptLog || {
                 );
               } else if (col === 'remediation') {
                 content = el('div', { style: { fontSize: '11px', maxWidth: '300px', wordWrap: 'break-word' } }, f[col]);
+              } else if (f[col] && typeof f[col] === 'object' && !Array.isArray(f[col])) {
+                content = el('pre', {
+                  style: {
+                    margin: 0,
+                    fontSize: '11px',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                    maxWidth: '320px'
+                  }
+                }, JSON.stringify(f[col], null, 2));
               } else if (Array.isArray(f[col])) {
                 content = el('div', { style: { fontSize: '11px', display: 'flex', flexWrap: 'wrap', gap: '4px' } }, f[col].map((item, idx) => el('span', { key: idx, className: 'vapt-pill-compact' },
                   typeof item === 'object' ? JSON.stringify(item) : String(item)
