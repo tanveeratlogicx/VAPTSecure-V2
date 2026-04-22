@@ -55,11 +55,16 @@ class VAPTGUARD_Auth
         return wp_mail($identity['email'], $subject, $message, $headers);
     }
 
-    public static function render_otp_form()
+    public static function render_otp_form($redirect_to = '')
     {
         $identity = vaptguard_get_superadmin_identity();
         $sent = (bool) get_transient(self::otp_sent_transient_key($identity['user']));
         $message = isset($_GET['vaptguard_otp']) ? sanitize_text_field(wp_unslash($_GET['vaptguard_otp'])) : '';
+        $raw_redirect = $redirect_to;
+        if (! is_string($raw_redirect) || $raw_redirect === '') {
+            $raw_redirect = isset($_GET['redirect_to']) ? wp_unslash($_GET['redirect_to']) : '';
+        }
+        $redirect_to = self::resolve_redirect_target($raw_redirect);
         ?>
         <div class="wrap">
             <h1><?php echo esc_html__('VAPTGuard OTP Verification', 'vaptguard'); ?></h1>
@@ -72,6 +77,7 @@ class VAPTGUARD_Auth
             <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="max-width:420px;">
                 <?php wp_nonce_field('vaptguard_verify_otp'); ?>
                 <input type="hidden" name="action" value="vaptguard_verify_otp" />
+                <input type="hidden" name="redirect_to" value="<?php echo esc_attr($redirect_to); ?>" />
                 <p>
                     <label for="vaptguard_otp_code"><?php echo esc_html__('Enter OTP', 'vaptguard'); ?></label><br />
                     <input type="text" id="vaptguard_otp_code" name="otp_code" inputmode="numeric" autocomplete="one-time-code" required style="width:100%;padding:8px;" />
@@ -83,6 +89,7 @@ class VAPTGUARD_Auth
             <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="max-width:420px; margin-top: 12px;">
                 <?php wp_nonce_field('vaptguard_resend_otp'); ?>
                 <input type="hidden" name="action" value="vaptguard_resend_otp" />
+                <input type="hidden" name="redirect_to" value="<?php echo esc_attr($redirect_to); ?>" />
                 <p>
                     <button type="submit" class="button"><?php echo esc_html($sent ? __('Resend OTP', 'vaptguard') : __('Send OTP', 'vaptguard')); ?></button>
                 </p>
@@ -100,8 +107,15 @@ class VAPTGUARD_Auth
         check_admin_referer('vaptguard_verify_otp');
 
         $identity = vaptguard_get_superadmin_identity();
+        $redirect_to = self::resolve_redirect_target(isset($_POST['redirect_to']) ? wp_unslash($_POST['redirect_to']) : '');
         if (! self::current_user_matches_identity($identity)) {
-            wp_safe_redirect(admin_url('admin.php?page=vaptguard&vaptguard_otp=failed'));
+            wp_safe_redirect(add_query_arg(
+                array(
+                    'vaptguard_otp' => 'failed',
+                    'redirect_to' => $redirect_to,
+                ),
+                $redirect_to
+            ));
             exit;
         }
 
@@ -109,13 +123,19 @@ class VAPTGUARD_Auth
         $otp_hash = get_transient(self::otp_transient_key($identity['user']));
 
         if (empty($otp) || empty($otp_hash) || ! wp_check_password($otp, $otp_hash)) {
-            wp_safe_redirect(admin_url('admin.php?page=vaptguard&vaptguard_otp=failed'));
+            wp_safe_redirect(add_query_arg(
+                array(
+                    'vaptguard_otp' => 'failed',
+                    'redirect_to' => $redirect_to,
+                ),
+                $redirect_to
+            ));
             exit;
         }
 
         delete_transient(self::otp_transient_key($identity['user']));
         set_transient(self::auth_transient_key($identity['user']), true, self::AUTH_TTL);
-        wp_safe_redirect(admin_url('admin.php?page=vaptguard&vaptguard_otp=success'));
+        wp_safe_redirect($redirect_to);
         exit;
     }
 
@@ -128,13 +148,26 @@ class VAPTGUARD_Auth
         check_admin_referer('vaptguard_resend_otp');
 
         $identity = vaptguard_get_superadmin_identity();
+        $redirect_to = self::resolve_redirect_target(isset($_POST['redirect_to']) ? wp_unslash($_POST['redirect_to']) : '');
         if (! self::current_user_matches_identity($identity)) {
-            wp_safe_redirect(admin_url('admin.php?page=vaptguard&vaptguard_otp=failed'));
+            wp_safe_redirect(add_query_arg(
+                array(
+                    'vaptguard_otp' => 'failed',
+                    'redirect_to' => $redirect_to,
+                ),
+                $redirect_to
+            ));
             exit;
         }
 
         self::send_otp();
-        wp_safe_redirect(admin_url('admin.php?page=vaptguard&vaptguard_otp=resent'));
+        wp_safe_redirect(add_query_arg(
+            array(
+                'vaptguard_otp' => 'resent',
+                'redirect_to' => $redirect_to,
+            ),
+            $redirect_to
+        ));
         exit;
     }
 
@@ -161,5 +194,15 @@ class VAPTGUARD_Auth
     private static function otp_sent_transient_key($user)
     {
         return 'vaptguard_otp_email_' . sanitize_key((string) $user);
+    }
+
+    private static function resolve_redirect_target($raw_redirect)
+    {
+        $default = admin_url('admin.php?page=vaptguard-domain-admin');
+        if (! is_string($raw_redirect) || $raw_redirect === '') {
+            return $default;
+        }
+
+        return wp_validate_redirect($raw_redirect, $default);
     }
 }

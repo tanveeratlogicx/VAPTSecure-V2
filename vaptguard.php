@@ -691,7 +691,7 @@ if (! function_exists('vaptguard_render_workbench_page')) {
                 if (! get_transient('vaptguard_otp_email_' . $identity['user'])) {
                     VAPTGUARD_Auth::send_otp();
                 }
-                VAPTGUARD_Auth::render_otp_form();
+                VAPTGUARD_Auth::render_otp_form(admin_url('admin.php?page=vaptguard-workbench'));
             } else {
                 wp_die(__('You do not have permission to access the VAPTGuard Pro Dashboard.', 'vaptguard'));
             }
@@ -773,7 +773,7 @@ if (! function_exists('vaptguard_master_dashboard_page')) {
                 if (! get_transient('vaptguard_otp_email_' . $identity['user'])) {
                     VAPTGUARD_Auth::send_otp();
                 }
-                VAPTGUARD_Auth::render_otp_form();
+                VAPTGUARD_Auth::render_otp_form(admin_url('admin.php?page=vaptguard-domain-admin'));
             } else {
                 // Identity DOES NOT match. Hard block.
                 wp_die(__('You do not have permission to access the VAPTGuard Pro Dashboard.', 'vaptguard'));
