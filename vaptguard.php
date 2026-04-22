@@ -4,7 +4,7 @@
  * Plugin Name: VAPTGuard Pro
  * Plugin URI: https://vaptguard.com/
  * Description: WordPress Security SaaS Platform - Dual interface security plugin with feature builder
- * Version: 1.0.4
+ * Version: 1.0.5
  * Author: Tanveer H. Malik
  * Author URI: https://vaptguard.com/
  * License: GPLv2 or later
@@ -58,7 +58,7 @@ if (false) {
 if (defined('VAPTGUARD_BUILD_VERSION')) {
     define('VAPTGUARD_VERSION', VAPTGUARD_BUILD_VERSION);
 } else {
-    define('VAPTGUARD_VERSION', '1.0.4');
+    define('VAPTGUARD_VERSION', '1.0.5');
 }
 if (! defined('VAPTGUARD_DATA_VERSION')) {
     define('VAPTGUARD_DATA_VERSION', '1.0.0');
