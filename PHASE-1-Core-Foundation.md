@@ -73,7 +73,8 @@ Tested up to: 6.4
 ### 1.5 Data File
 | Source | Status |
 |--------|--------|
-| `data/Feature-List-159-Adaptive-Updated.json` | Already present - no copy needed |
+| `data/Updated_Feature_List_159_Adaptive.json` | Primary file - already present |
+| `data/Feature-List-159-Adaptive-Updated.json` | Legacy compatibility file |
 
 ---
 
@@ -211,17 +212,18 @@ vaptsecure/v1  → vaptguard/v1
 
 ### How Features Load:
 
-1. **Source**: `data/Feature-List-159-Adaptive-Updated.json`
+1. **Source**: `data/Updated_Feature_List_159_Adaptive.json` (primary) with legacy fallback support
 2. **Method**: On activation, iterate through all 159 features
 3. **Initial Status**: 'Draft'
 
 ### Code Pattern:
 ```php
 // On plugin activation
-$features_json = file_get_contents(VAPTGUARD_PATH . 'data/Feature-List-159-Adaptive-Updated.json');
+$features_json = file_get_contents(VAPTGUARD_PATH . 'data/Updated_Feature_List_159_Adaptive.json');
 $features = json_decode($features_json, true);
 
-// For each feature key in _index['by_feature_id']:
+// For new schema: iterate features[] and use item['id'].
+// For legacy schema: iterate _index['by_risk_id'].
 // INSERT INTO wp_vaptguard_feature_status (feature_key, status)
 // VALUES ('feature_id', 'Draft')
 
@@ -269,7 +271,8 @@ VAPTSecureV2/
 │   └── interfaces/
 │       └── interface-vaptguard-driver.php  # ✓ Clone
 ├── data/
-│   └── Feature-List-159-Adaptive-Updated.json  # (already present)
+│   ├── Updated_Feature_List_159_Adaptive.json  # primary catalog
+│   └── Feature-List-159-Adaptive-Updated.json  # legacy compatibility
 ```
 
 ---

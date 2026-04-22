@@ -3,6 +3,9 @@
 ## Overview
 Workbench UI, feature state transitions (4 states), enforcers, Test state with local context.
 
+Feature orchestration in this phase must remain policy-driven from:
+- `data/Updated_Feature_List_159_Adaptive.json`
+
 ---
 
 ## Phase Goal
@@ -125,6 +128,15 @@ When a feature is in **Test** state:
 - Does NOT inherit global config changes
 - Isolated from other features
 
+## Shared Engines Required In This Phase
+
+- Central rate-limiting engine using `rate_limiting_controls`
+- Shared endpoint matcher using `wp_path_patterns` (with `wp_paths_flat` as helper list)
+- Shared sanitization/validation layer for Injection/Input Validation families
+- Central audit/event logging service
+- Rule-to-endpoint mapping keyed by `RiskID` and `id`
+- Evidence capture pipeline that records verification results from `verification_steps`
+
 ---
 
 ## Test Criteria (Phase 3)
@@ -147,6 +159,8 @@ When a feature is in **Test** state:
 - [ ] Test state isolation works
 - [ ] Transition modal captures history
 - [ ] Enforcers load correctly
+- [ ] `granular_controls.reference` normalization handled (`_rate_limiting_controls` → `rate_limiting_controls`)
+- [ ] Feature grouping available by severity/category/OWASP (with OWASP optional)
 - [ ] No JavaScript console errors
 
 ---

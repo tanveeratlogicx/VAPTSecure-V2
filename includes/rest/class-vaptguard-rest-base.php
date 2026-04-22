@@ -12,6 +12,48 @@ abstract class VAPTGUARD_REST_Base
 {
     protected static $cached_pattern_library = null;
 
+    /**
+     * Normalize a status value to the canonical title-case form.
+     */
+    protected static function normalize_status($status)
+    {
+        if (class_exists('VAPTGUARD_Workflow')) {
+            return VAPTGUARD_Workflow::normalize_status($status);
+        }
+
+        $status = strtolower(trim((string) $status));
+        $map = array(
+            'available'   => 'Draft',
+            'draft'       => 'Draft',
+            'develop'     => 'Develop',
+            'in_progress' => 'Develop',
+            'testing'     => 'Test',
+            'test'        => 'Test',
+            'implemented' => 'Release',
+            'release'     => 'Release',
+        );
+
+        return isset($map[$status]) ? $map[$status] : ucfirst($status);
+    }
+
+    /**
+     * Whether verbose debug logging should be emitted.
+     */
+    protected static function is_debug_enabled()
+    {
+        return defined('WP_DEBUG') && WP_DEBUG;
+    }
+
+    /**
+     * Emit a debug log only when debug mode is enabled.
+     */
+    protected static function debug_log($message)
+    {
+        if (self::is_debug_enabled()) {
+            error_log($message);
+        }
+    }
+
     protected static function get_cached_pattern_library()
     {
         if (self::$cached_pattern_library === null) {

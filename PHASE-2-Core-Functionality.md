@@ -10,6 +10,10 @@ REST API, authentication system, options/session management, transition modal.
 ## Phase Goal
 Features can **transition to Develop** state. Transition modal collects dev_instruct, wireframe_url, note.
 
+Data-file compatibility requirement:
+- `GET /vaptguard/v1/features` must parse the new catalog format `features[]` from `data/Updated_Feature_List_159_Adaptive.json`
+- Legacy schema support remains allowed for `_index`/`risk_catalog`/`risk_interfaces`
+
 ---
 
 ## Files to Process

@@ -10,6 +10,10 @@ Workbench UI, feature state transitions (4 states), enforcers, Test state with l
 ## Phase Goal
 Workbench functional. Features can transition through all 4 states with adjacent-only rules. Test state isolates local config.
 
+Transition consistency requirement:
+- REST transitions must delegate to workflow logic so lifecycle validation stays centralized.
+- `Release` reverts only to `Test` (not directly to `Develop`/`Draft`).
+
 ---
 
 ## Files to Process

@@ -3,6 +3,9 @@
 ## Overview
 REST API, authentication system, options/session management, transition modal.
 
+All feature metadata exposed/updated in this phase must be read from and written against:
+- `data/Updated_Feature_List_159_Adaptive.json` derived feature registry
+
 ---
 
 ## Phase Goal
@@ -193,6 +196,14 @@ $wpdb->update($status_table,
 );
 ```
 
+### Datasource Rules For Phase 2 Endpoints
+
+- Do not introduce alternate feature catalogs, cache snapshots, or fallback JSON files.
+- API contracts must preserve `RiskID` and `id` in responses for traceability.
+- Surface `severity`, `category`, and `owasp` (when present) in list/detail responses.
+- Include `test_method`, `verification_steps`, and `remediation` fields for Workbench and admin tooling.
+- Keep missing `owasp` values nullable; do not synthesize placeholder mappings.
+
 ---
 
 ## Test Criteria (Phase 2)
@@ -206,6 +217,8 @@ $wpdb->update($status_table,
   - [ ] Superadmin identity check (`is_vaptguard_superadmin()`)
   - [ ] OTP flow functional
 - [ ] Options save/retrieve correctly
+- [ ] REST responses include `RiskID` + `id` + `severity` + `category`
+- [ ] REST responses expose `verification_steps` and `remediation`
 - [ ] Transition modal displays:
   - [ ] Draft → Develop modal shows
   - [ ] All 3 fields present (note, dev_instruct, wireframe_url)

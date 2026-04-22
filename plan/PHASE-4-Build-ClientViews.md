@@ -3,6 +3,9 @@
 ## Overview
 Build generator, client views, in-place editing for Release features, domain management.
 
+Build generation in this phase must be sourced from:
+- `data/Updated_Feature_List_159_Adaptive.json` only
+
 ---
 
 ## Phase Goal
@@ -101,6 +104,7 @@ Can continue editing anytime
 - Release features only
 - client.js (not workbench.js or admin.js)
 - No Build Generator functionality
+- Feature metadata required for client evidence/UI: `RiskID`, `id`, `name`, `category`, `severity`, `owasp` (if present), `verification_steps`, `remediation`
 
 ### What's Excluded from Client Build:
 - Superadmin identity functions
@@ -148,6 +152,7 @@ VAPTGuard Pro (only this)
   - [ ] Select Release features
   - [ ] Generate ZIP
   - [ ] Domain locking works
+  - [ ] Build manifest traces each feature back to `RiskID` and `id`
 - [ ] In-place editing works:
   - [ ] Edit Release feature metadata
   - [ ] State stays "Release"
@@ -184,7 +189,7 @@ VAPTSecureV2/
 │   └── css/
 │       └── admin.css          # ✓ Clone
 └── data/
-    └── Feature-List-159-Adaptive-Updated.json
+    └── Updated_Feature_List_159_Adaptive.json
 ```
 
 ---

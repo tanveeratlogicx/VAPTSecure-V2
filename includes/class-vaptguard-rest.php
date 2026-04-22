@@ -8,11 +8,9 @@ if (! defined('ABSPATH')) {
     exit;
 }
 
-class VAPTGUARD_REST
+class VAPTGUARD_REST extends VAPTGUARD_REST_Base
 {
-    private static $cached_pattern_library = null;
-
-    private static function get_cached_pattern_library()
+    protected static function get_cached_pattern_library()
     {
         if (self::$cached_pattern_library === null) {
             $pattern_lib_path = VAPTGUARD_PATH . 'data/enforcer_pattern_library_v2.0.json';
@@ -23,6 +21,57 @@ class VAPTGUARD_REST
             }
         }
         return self::$cached_pattern_library;
+    }
+
+    protected static function get_features_cache_version()
+    {
+        return (string) get_option('vaptguard_features_cache_version', '0');
+    }
+
+    protected static function bump_features_cache_version()
+    {
+        update_option('vaptguard_features_cache_version', (string) time(), false);
+    }
+
+    protected static function build_features_cache_key($requested_file, $scope, $severity_param, $redetect, $domain, $is_superadmin)
+    {
+        $payload = array(
+            'file' => (string) $requested_file,
+            'scope' => (string) $scope,
+            'severity' => (string) $severity_param,
+            'redetect' => (string) $redetect,
+            'domain' => (string) $domain,
+            'is_superadmin' => $is_superadmin ? '1' : '0',
+            'version' => self::get_features_cache_version(),
+        );
+
+        return 'vaptguard_features_' . md5(wp_json_encode($payload));
+    }
+
+    /**
+     * Normalize a filename to a safe JSON file under the data directory.
+     */
+    private static function normalize_json_filename($filename)
+    {
+        $filename = sanitize_file_name(basename((string) $filename));
+        if ($filename === '' || strtolower(pathinfo($filename, PATHINFO_EXTENSION)) !== 'json') {
+            return '';
+        }
+
+        return $filename;
+    }
+
+    /**
+     * Build the controlled directory used for generated config exports.
+     */
+    private static function get_generated_config_dir()
+    {
+        $dir = trailingslashit(VAPTGUARD_PATH . 'data/generated-configs');
+        if (! file_exists($dir)) {
+            wp_mkdir_p($dir);
+        }
+
+        return $dir;
     }
 
     public function __construct()
@@ -76,7 +125,7 @@ class VAPTGUARD_REST
             'vaptguard/v1', '/reset-limit', array(
             'methods' => 'POST',
             'callback' => array($this, 'reset_rate_limit'),
-            'permission_callback' => '__return_true', // Public endpoint for testing (limited to user IP)
+            'permission_callback' => array($this, 'check_permission'),
             )
         );
 
@@ -85,7 +134,7 @@ class VAPTGUARD_REST
             'vaptguard/v1', '/features/update', array(
             'methods'  => 'POST',
             'callback' => array($this, 'update_feature'),
-            'permission_callback' => array($this, 'check_read_permission'),
+            'permission_callback' => array($this, 'check_permission'),
             )
         );
 
@@ -388,7 +437,7 @@ class VAPTGUARD_REST
             $uid = get_current_user_id();
             $user = get_userdata($uid);
             $login = $user ? $user->user_login : 'unknown';
-            error_log("VAPTGUARD_REST: check_permission FAILED for user ID $uid ($login). Superadmin status required.");
+            self::debug_log("VAPTGUARD_REST: check_permission FAILED for user ID $uid ($login). Superadmin status required.");
         }
         return $is_super;
     }
@@ -401,11 +450,10 @@ class VAPTGUARD_REST
         $user = get_userdata($uid);
         $login = $user ? $user->user_login : 'unknown';
 
-        // Debug logging
-        error_log("VAPTGUARD_REST: check_read_permission - User ID: $uid ($login), is_super: " . ($is_super ? 'true' : 'false') . ", can_manage: " . ($can_manage ? 'true' : 'false'));
+        self::debug_log("VAPTGUARD_REST: check_read_permission - User ID: $uid ($login), is_super: " . ($is_super ? 'true' : 'false') . ", can_manage: " . ($can_manage ? 'true' : 'false'));
 
         if (!$is_super && !$can_manage) {
-            error_log("VAPTGUARD_REST: check_read_permission FAILED for user ID $uid ($login). 'manage_options' capability required.");
+            self::debug_log("VAPTGUARD_REST: check_read_permission FAILED for user ID $uid ($login). 'manage_options' capability required.");
         }
         return $is_super || $can_manage;
     }
@@ -413,40 +461,19 @@ class VAPTGUARD_REST
     public function get_features($request)
     {
         try {
-            $default_file = defined('VAPTGUARD_ACTIVE_DATA_FILE') ? VAPTGUARD_ACTIVE_DATA_FILE : 'interface_schema_v2.0.json';
+            $default_file = defined('VAPTGUARD_ACTIVE_DATA_FILE') ? VAPTGUARD_ACTIVE_DATA_FILE : 'Updated_Feature_List_159_Adaptive.json';
             $requested_file = $request->get_param('file') ?: $default_file;
 
             // 1. Resolve which files to load
-            $files_to_load = [];
-            if ($requested_file === '__all__') {
-                $data_dir = VAPTGUARD_PATH . 'data';
-                if (is_dir($data_dir)) {
-                    $all_json = array_filter(
-                        scandir($data_dir), function ($f) {
-                            return strtolower(pathinfo($f, PATHINFO_EXTENSION)) === 'json';
-                        }
-                    );
-                    $hidden_files = get_option('vaptguard_hidden_json_files', array());
-                    $removed_files = get_option('vaptguard_removed_json_files', array());
-                    $hidden_normalized = array_map('sanitize_file_name', $hidden_files);
-                    $removed_normalized = array_map('sanitize_file_name', $removed_files);
-
-                    foreach ($all_json as $f) {
-                            $normalized = sanitize_file_name($f);
-                        if (!in_array($normalized, $hidden_normalized) && !in_array($normalized, $removed_normalized)) {
-                            $files_to_load[] = $f;
-                        }
-                    }
-                }
-            } else {
-                $files_to_load = array_filter(explode(',', $requested_file));
+            if (!class_exists('VAPTGUARD_Catalog_Loader')) {
+                include_once VAPTGUARD_PATH . 'includes/class-vaptguard-catalog-loader.php';
             }
-
-            // v3.12.1: Final filter against existence to prevent stale entries
-            $files_to_load = array_filter(
-                $files_to_load, function ($f) {
-                    return file_exists(VAPTGUARD_PATH . 'data/' . sanitize_file_name($f));
-                }
+            $data_dir = VAPTGUARD_PATH . 'data';
+            $files_to_load = VAPTGUARD_Catalog_Loader::resolve_files_to_load(
+                $requested_file,
+                $data_dir,
+                get_option('vaptguard_hidden_json_files', array()),
+                get_option('vaptguard_removed_json_files', array())
             );
 
             // 2. Pre-fetch global state (Status map and History counts)
@@ -467,6 +494,19 @@ class VAPTGUARD_REST
             $is_superadmin = is_vaptguard_superadmin();
             $scope = $request->get_param('scope');
             $severity_param = $request->get_param('severity');
+            $cache_key = self::build_features_cache_key(
+                $requested_file,
+                $scope,
+                $severity_param,
+                $request->get_param('redetect') ? '1' : '0',
+                $request->get_param('domain'),
+                $is_superadmin
+            );
+
+            $cached_response = get_transient($cache_key);
+            if ($cached_response !== false) {
+                return new WP_REST_Response($cached_response, 200);
+            }
 
             $features = [];
             $schema = [];
@@ -803,6 +843,7 @@ class VAPTGUARD_REST
                 $response_data['active_catalog'] = $requested_file;
                 $response_data['total_features'] = count($features);
             }
+            set_transient($cache_key, $response_data, 5 * MINUTE_IN_SECONDS);
             return new WP_REST_Response($response_data, 200);
         } catch (\Throwable $e) {
             error_log('[VAPT REST Error] get_features: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
@@ -885,8 +926,9 @@ class VAPTGUARD_REST
             
             // Update the active file option
             update_option('vaptguard_active_feature_file', $filename);
+            self::bump_features_cache_version();
             
-            error_log("VAPT REST: Active file set to '{$filename}'");
+            self::debug_log("VAPT REST: Active file set to '{$filename}'");
             return new WP_REST_Response([
                 'active_file' => $filename,
                 'success' => true
@@ -947,16 +989,17 @@ class VAPTGUARD_REST
 
         // FIX: Lifecycle race condition. Capture initial status before transition runs.
         $current_feat_db = VAPTGUARD_DB::get_feature($key);
-        $initial_status = 'draft';
+        $initial_status = 'Draft';
         if ($current_feat_db) {
             if (is_array($current_feat_db) && isset($current_feat_db['status'])) {
-                $initial_status = strtolower($current_feat_db['status']);
+                $initial_status = self::normalize_status($current_feat_db['status']);
             } elseif (is_object($current_feat_db) && isset($current_feat_db->status)) {
-                $initial_status = strtolower($current_feat_db->status);
+                $initial_status = self::normalize_status($current_feat_db->status);
             }
         }
 
         if ($status) {
+            $status = self::normalize_status($status);
             global $wpdb;
             $note          = sanitize_textarea_field($request->get_param('history_note') ?: ($request->get_param('transition_note') ?: ''));
             $status_table  = $wpdb->prefix . 'vaptguard_feature_status';
@@ -1049,7 +1092,7 @@ class VAPTGUARD_REST
                 // Update: 'Test' stage allows updates but saves to OVERRIDE meta (Local customization)
                 $current_status = $initial_status; // Use captured status to prevent locking during transition
 
-                if (!in_array($current_status, ['draft', 'develop', 'test'])) {
+                if (!in_array(self::normalize_status_key($current_status), array('draft', 'develop', 'test'), true)) {
                     return new WP_REST_Response(
                         array(
                         'error' => 'Lifecycle Restriction',
@@ -1113,7 +1156,7 @@ class VAPTGUARD_REST
                     }
                 }
 
-                if ($current_status === 'test') {
+                if (self::normalize_status_key($current_status) === 'test') {
                     $meta_updates['override_schema'] = json_encode($schema);
                 } else {
                     $meta_updates['generated_schema'] = json_encode($schema);
@@ -1200,7 +1243,7 @@ class VAPTGUARD_REST
                     // Sync both is_enabled AND is_enforced for consistent enforcement
                     $meta_updates['is_enabled'] = $is_enabled ? 1 : 0;
                     $meta_updates['is_enforced'] = $is_enabled ? 1 : 0;
-                    error_log("VAPT: Toggled enforcement for $key to " . ($is_enabled ? 'ENABLED' : 'DISABLED') . " (synced to both is_enabled and is_enforced)");
+                    self::debug_log("VAPT: Toggled enforcement for $key to " . ($is_enabled ? 'ENABLED' : 'DISABLED') . " (synced to both is_enabled and is_enforced)");
                 }
             }
         }
@@ -1214,8 +1257,9 @@ class VAPTGUARD_REST
                     error_log("[VAPT Error] DB Update Failed for $key: " . $wpdb->last_error);
                 }
             }
-            error_log("VAPT REST: Triggering vaptguard_feature_saved hook for feature '{$key}'");
+            self::debug_log("VAPT REST: Triggering vaptguard_feature_saved hook for feature '{$key}'");
             do_action('vaptguard_feature_saved', $key, $meta_updates);
+            self::bump_features_cache_version();
         } else {
              // error_log("VAPT: No meta updates identified for $key");
         }
@@ -1241,8 +1285,8 @@ class VAPTGUARD_REST
         global $wpdb;
         $include_release = (bool) $request->get_param('include_release');
         $status_table = $wpdb->prefix . 'vaptguard_feature_status';
-        $statuses = array('Develop');
-        if ($include_release) { $statuses[] = 'Release'; }
+        $statuses = array(self::normalize_status('Develop'));
+        if ($include_release) { $statuses[] = self::normalize_status('Release'); }
         $placeholders = implode(',', array_fill(0, count($statuses), '%s'));
         $rows = $wpdb->get_results($wpdb->prepare("SELECT feature_key, status FROM $status_table WHERE status IN ($placeholders)", ...$statuses), ARRAY_A);
         return new WP_REST_Response(array('success' => true, 'count' => count($rows), 'features' => $rows), 200);
@@ -1262,16 +1306,16 @@ class VAPTGUARD_REST
         $user_id         = get_current_user_id();
         $now             = current_time('mysql');
 
-        $statuses = array('Develop');
-        if ($include_release) { $statuses[] = 'Release'; }
+        $statuses = array(self::normalize_status('Develop'));
+        if ($include_release) { $statuses[] = self::normalize_status('Release'); }
         $placeholders = implode(',', array_fill(0, count($statuses), '%s'));
         $rows = $wpdb->get_results($wpdb->prepare("SELECT feature_key, status FROM $status_table WHERE status IN ($placeholders)", ...$statuses), ARRAY_A);
 
         $reverted = array(); $failed = array();
         foreach ($rows as $row) {
             $key = $row['feature_key'];
-            $wpdb->insert($history_table, array('feature_key' => $key, 'old_status' => $row['status'], 'new_status' => 'Draft', 'user_id' => $user_id, 'note' => $note, 'created_at' => $now), array('%s','%s','%s','%d','%s','%s'));
-            $r = $wpdb->update($status_table, array('status' => 'Draft'), array('feature_key' => $key), array('%s'), array('%s'));
+            $wpdb->insert($history_table, array('feature_key' => $key, 'old_status' => self::normalize_status($row['status']), 'new_status' => self::normalize_status('Draft'), 'user_id' => $user_id, 'note' => $note, 'created_at' => $now), array('%s','%s','%s','%d','%s','%s'));
+            $r = $wpdb->update($status_table, array('status' => self::normalize_status('Draft')), array('feature_key' => $key), array('%s'), array('%s'));
             if ($r !== false) { $reverted[] = $key; } else { $failed[] = $key; }
         }
 
@@ -1289,7 +1333,12 @@ class VAPTGUARD_REST
             return new WP_REST_Response(array('error' => 'Missing file or key param'), 400);
         }
 
-        $json_path = VAPTGUARD_PATH . 'data/' . sanitize_file_name($file);
+        $normalized_file = self::normalize_json_filename($file);
+        if ($normalized_file === '') {
+            return new WP_REST_Response(array('error' => 'Invalid JSON filename'), 400);
+        }
+
+        $json_path = VAPTGUARD_PATH . 'data/' . $normalized_file;
 
         if (!file_exists($json_path)) {
             return new WP_REST_Response(array('error' => 'File not found'), 404);
@@ -1314,6 +1363,7 @@ class VAPTGUARD_REST
             return new WP_REST_Response(array('error' => 'Failed to write to file'), 500);
         }
 
+        self::bump_features_cache_version();
         return new WP_REST_Response(array('success' => true, 'updated_key' => $key), 200);
     }
 
@@ -1321,7 +1371,7 @@ class VAPTGUARD_REST
     {
         global $wpdb;
         $feature_key   = sanitize_text_field($request->get_param('feature_key') ?: $request->get_param('key'));
-        $new_status    = sanitize_text_field($request->get_param('new_status') ?: $request->get_param('status') ?: 'Develop');
+        $new_status    = self::normalize_status(sanitize_text_field($request->get_param('new_status') ?: $request->get_param('status') ?: 'Develop'));
         $note          = sanitize_textarea_field($request->get_param('note') ?: '');
         $dev_instruct  = wp_kses_post($request->get_param('dev_instruct') ?: '');
         $wireframe_url = esc_url_raw($request->get_param('wireframe_url') ?: '');
@@ -1341,41 +1391,24 @@ class VAPTGUARD_REST
         if (!$current_row) {
             return new WP_REST_Response(array('error' => 'Feature not found: ' . $feature_key), 404);
         }
-        $old_status = $current_row['status'];
+        $old_status = self::normalize_status($current_row['status']);
 
-        $allowed_transitions = array(
-            'Draft'   => array('Develop'),
-            'Develop'=> array('Draft', 'Test'),
-            'Test'   => array('Develop', 'Release'),
-            'Release'=> array('Develop'),
-        );
-        if (!isset($allowed_transitions[$old_status]) || !in_array($new_status, $allowed_transitions[$old_status], true)) {
-            return new WP_REST_Response(array('error' => "Invalid transition: '{$old_status}' → '{$new_status}'. Only adjacent transitions are allowed."), 400);
-        }
 
         // Save dev_instruct / wireframe_url to meta
         $meta_updates = array();
         if (!empty($dev_instruct))  { $meta_updates['dev_instruct']  = $dev_instruct; }
         if (!empty($wireframe_url)) { $meta_updates['wireframe_url'] = $wireframe_url; }
         if (!empty($meta_updates))  { $wpdb->update($meta_table, $meta_updates, array('feature_key' => $feature_key)); }
-
-        // Insert history record
-        $wpdb->insert($history_table, array(
-            'feature_key' => $feature_key,
-            'old_status'  => $old_status,
-            'new_status'  => $new_status,
-            'user_id'     => get_current_user_id(),
-            'note'        => $note,
-            'created_at'  => current_time('mysql'),
-        ), array('%s', '%s', '%s', '%d', '%s', '%s'));
-
-        // Update status
-        $updated = $wpdb->update($status_table, array('status' => $new_status), array('feature_key' => $feature_key), array('%s'), array('%s'));
-        if ($updated === false) {
-            return new WP_REST_Response(array('error' => 'Database update failed: ' . $wpdb->last_error), 500);
+        include_once VAPTGUARD_PATH . 'includes/class-vaptguard-workflow.php';
+        if (!class_exists('VAPTGUARD_Workflow')) {
+            return new WP_REST_Response(array('error' => 'Workflow class not available'), 500);
+        }
+        $transition_result = VAPTGUARD_Workflow::transition_feature($feature_key, $new_status, $note, get_current_user_id());
+        if (is_wp_error($transition_result)) {
+            return new WP_REST_Response(array('error' => $transition_result->get_error_message()), 400);
         }
 
-        error_log("[VAPTGuard REST] Transition '{$feature_key}': '{$old_status}' -> '{$new_status}'");
+        self::debug_log("[VAPTGuard REST] Transition '{$feature_key}': '{$old_status}' -> '{$new_status}'");
         return new WP_REST_Response(array('success' => true, 'feature_key' => $feature_key, 'old_status' => $old_status, 'new_status' => $new_status), 200);
     }
 
@@ -1418,33 +1451,37 @@ class VAPTGUARD_REST
 
     public function upload_json($request)
     {
-        error_log('VAPT Secure: Starting JSON upload...');
+        self::debug_log('VAPT Secure: Starting JSON upload...');
 
         $files = $request->get_file_params();
         if (empty($files['file'])) {
-            error_log('VAPT Secure: No file param found.');
+            self::debug_log('VAPT Secure: No file param found.');
             return new WP_REST_Response(array('error' => 'No file uploaded'), 400);
         }
 
         $file = $files['file'];
-        error_log('VAPT Secure: Received file ' . $file['name'] . ' size ' . $file['size']);
+        self::debug_log('VAPT Secure: Received file ' . $file['name'] . ' size ' . $file['size']);
 
         if ($file['error'] !== UPLOAD_ERR_OK) {
-            error_log('VAPT Secure: PHP Upload Error ' . $file['error']);
+            self::debug_log('VAPT Secure: PHP Upload Error ' . $file['error']);
             return new WP_REST_Response(array('error' => 'PHP Upload Error: ' . $file['error']), 500);
         }
 
-        $filename = sanitize_file_name($file['name']);
+        $filename = self::normalize_json_filename($file['name']);
+        if ($filename === '') {
+            return new WP_REST_Response(array('error' => 'Only JSON files are allowed'), 400);
+        }
+
         $content = file_get_contents($file['tmp_name']);
 
         if ($content === false) {
-            error_log('VAPT Secure: Could not read temp file.');
+            self::debug_log('VAPT Secure: Could not read temp file.');
             return new WP_REST_Response(array('error' => 'Failed to read uploaded file.'), 500);
         }
 
         $data = json_decode($content, true);
         if (is_null($data)) {
-            error_log('VAPT Secure: Invalid JSON content.');
+            self::debug_log('VAPT Secure: Invalid JSON content.');
             return new WP_REST_Response(array('error' => 'Invalid JSON'), 400);
         }
 
@@ -1481,7 +1518,8 @@ class VAPTGUARD_REST
             return new WP_REST_Response(array('error' => 'WP_Filesystem failed to write file to: ' . $json_path), 500);
         }
 
-        error_log('VAPT Secure: Upload successful to ' . $json_path);
+        self::debug_log('VAPT Secure: Upload successful to ' . $json_path);
+        self::bump_features_cache_version();
 
         // ... rest of the logic remains same ...
 
@@ -1511,6 +1549,7 @@ class VAPTGUARD_REST
             update_option('vaptguard_removed_json_files', array_values($new_removed));
         }
 
+        self::bump_features_cache_version();
         return new WP_REST_Response(array('success' => true, 'filename' => $filename), 200);
     }
 
@@ -1525,6 +1564,7 @@ class VAPTGUARD_REST
 
         update_option('vaptguard_hidden_json_files', $hidden_files);
         $this->sanitize_active_file();
+        self::bump_features_cache_version();
 
         return new WP_REST_Response(array('success' => true, 'hidden_files' => $hidden_files), 200);
     }
@@ -1536,7 +1576,7 @@ class VAPTGUARD_REST
             return new WP_REST_Response(array('error' => 'Missing filename'), 400);
         }
 
-        $active_file = defined('VAPTGUARD_ACTIVE_DATA_FILE') ? VAPTGUARD_ACTIVE_DATA_FILE : 'VAPT-SixTee-Risk-Catalogue-12-EntReady_v3.4.json';
+        $active_file = defined('VAPTGUARD_ACTIVE_DATA_FILE') ? VAPTGUARD_ACTIVE_DATA_FILE : 'Updated_Feature_List_159_Adaptive.json';
         if ($filename === $active_file || sanitize_file_name($filename) === sanitize_file_name($active_file)) {
             return new WP_REST_Response(array('error' => 'Cannot remove the active file.'), 400);
         }
@@ -1553,6 +1593,10 @@ class VAPTGUARD_REST
 
     public function reset_rate_limit($request)
     {
+        if (! $this->check_permission()) {
+            return new WP_REST_Response(array('error' => 'Permission denied'), 403);
+        }
+
         include_once VAPTGUARD_PATH . 'includes/enforcers/class-vaptguard-hook-driver.php';
         if (class_exists('VAPTGUARD_Hook_Driver')) {
             $result = VAPTGUARD_Hook_Driver::reset_limit();
@@ -1568,6 +1612,7 @@ class VAPTGUARD_REST
     public function clear_enforcement_cache($request)
     {
         delete_transient('vaptguard_active_enforcements');
+        self::bump_features_cache_version();
 
         // Also clear any other VAPT transients
         global $wpdb;
@@ -1843,6 +1888,8 @@ class VAPTGUARD_REST
         if ($result_id === false) {
             return new WP_REST_Response(array('error' => 'Database update failed'), 500);
         }
+
+        self::bump_features_cache_version();
         
         // Check if license was previously expired and is now valid (restoration scenario)
         $was_expired = get_transient('vaptguard_license_cache_' . $domain . '_expired_handled');
@@ -1944,17 +1991,23 @@ class VAPTGUARD_REST
             return new WP_REST_Response(array('error' => 'Missing domain or version'), 400);
         }
 
+        $safe_domain = sanitize_file_name(strtolower((string) $domain));
+        $safe_version = sanitize_file_name(strtolower((string) $version));
+        if ($safe_domain === '' || $safe_version === '') {
+            return new WP_REST_Response(array('error' => 'Invalid domain or version'), 400);
+        }
+
         include_once VAPTGUARD_PATH . 'includes/class-vaptguard-build.php';
         $config_content = VAPTGUARD_Build::generate_config_content($domain, $version, $features, null, $license_scope, $installation_limit, $restrict_features);
-        $filename = "vapt-{$domain}-config-{$version}.php";
-        $filepath = VAPTGUARD_PATH . $filename;
+        $filename = "vapt-{$safe_domain}-config-{$safe_version}.php";
+        $filepath = self::get_generated_config_dir() . $filename;
 
         $saved = file_put_contents($filepath, $config_content);
 
         if ($saved !== false) {
             return new WP_REST_Response(array('success' => true, 'path' => $filepath, 'filename' => $filename), 200);
         } else {
-            return new WP_REST_Response(array('error' => 'Failed to write config file to plugin root'), 500);
+            return new WP_REST_Response(array('error' => 'Failed to write config file'), 500);
         }
     }
 
@@ -1965,7 +2018,10 @@ class VAPTGUARD_REST
             return new WP_REST_Response(array('error' => 'Missing domain'), 400);
         }
 
-        $files = glob(VAPTGUARD_PATH . "vapt-*-config-*.php");
+        $files = array_merge(
+            glob(self::get_generated_config_dir() . "vapt-*-config-*.php") ?: array(),
+            glob(VAPTGUARD_PATH . "vapt-*-config-*.php") ?: array()
+        );
         $matched_file = null;
 
         if ($files) {
@@ -1977,8 +2033,8 @@ class VAPTGUARD_REST
             }
         }
 
-        if (!$matched_file && file_exists(VAPTGUARD_PATH . 'vapt-locked-config.php')) {
-            $matched_file = VAPTGUARD_PATH . 'vapt-locked-config.php';
+        if (!$matched_file && file_exists(self::get_generated_config_dir() . 'vapt-locked-config.php')) {
+            $matched_file = self::get_generated_config_dir() . 'vapt-locked-config.php';
         }
 
         if (!$matched_file) {
@@ -2118,7 +2174,7 @@ class VAPTGUARD_REST
      * 
      * @deprecated Use VAPTGUARD_Schema_Validator::analyze_enforcement_strategy()
      */
-    private static function analyze_enforcement_strategy($schema, $feature_key)
+    protected static function analyze_enforcement_strategy($schema, $feature_key)
     {
         return VAPTGUARD_Schema_Validator::analyze_enforcement_strategy($schema, $feature_key);
     }
@@ -2128,7 +2184,7 @@ class VAPTGUARD_REST
      * 
      * @deprecated Use VAPTGUARD_Schema_Validator::sanitize_and_fix_schema()
      */
-    private static function sanitize_and_fix_schema($schema)
+    protected static function sanitize_and_fix_schema($schema)
     {
         return VAPTGUARD_Schema_Validator::sanitize_and_fix_schema($schema);
     }
@@ -2138,7 +2194,7 @@ class VAPTGUARD_REST
      * 
      * @deprecated Use VAPTGUARD_Schema_Validator::validate_schema()
      */
-    private static function validate_schema($schema)
+    protected static function validate_schema($schema)
     {
         return VAPTGUARD_Schema_Validator::validate_schema($schema);
     }
@@ -2149,7 +2205,7 @@ class VAPTGUARD_REST
      * 
      * @deprecated Use VAPTGUARD_Schema_Validator::validate_implementation_data()
      */
-    private static function validate_implementation_data($data, $schema)
+    protected static function validate_implementation_data($data, $schema)
     {
         return VAPTGUARD_Schema_Validator::validate_implementation_data($data, $schema);
     }
@@ -2159,7 +2215,7 @@ class VAPTGUARD_REST
      * 
      * @deprecated Use VAPTGUARD_Schema_Validator::translate_url_placeholders()
      */
-    private static function translate_url_placeholders($schema)
+    protected static function translate_url_placeholders($schema)
     {
         return VAPTGUARD_Schema_Validator::translate_url_placeholders($schema);
     }
@@ -2180,6 +2236,75 @@ class VAPTGUARD_REST
     }
 
     /**
+     * Resolve valid column keys from the active catalog feature schema.
+     * Falls back to the canonical A+ adaptive core columns if discovery fails.
+     */
+    private function get_valid_datafile_column_keys()
+    {
+        $fallback_keys = array('RiskID', 'id', 'name', 'description', 'category', 'severity', 'owasp', 'test_method', 'verification_steps', 'remediation', 'granular_controls');
+        $runtime_excluded = array(
+            'key', 'label',
+            'status', 'normalized_status', 'implemented_at', 'assigned_to', 'has_history',
+            'source_file', 'exists_in_multiple_files',
+            'include_test_method', 'include_verification', 'include_verification_engine', 'include_verification_guidance',
+            'is_enabled', 'is_enforced', 'is_adaptive_deployment',
+            'wireframe_url', 'dev_instruct', 'generated_schema', 'implementation_data',
+            'active_enforcer', 'is_overridden',
+            'root_design_prompt', 'root_ai_agent_instructions', 'root_global_settings'
+        );
+
+        $active_file = defined('VAPTGUARD_ACTIVE_DATA_FILE') ? VAPTGUARD_ACTIVE_DATA_FILE : 'Updated_Feature_List_159_Adaptive.json';
+        $json_path = VAPTGUARD_PATH . 'data/' . sanitize_file_name($active_file);
+        if (!file_exists($json_path)) {
+            return $fallback_keys;
+        }
+
+        $raw_data = json_decode(file_get_contents($json_path), true);
+        if (!is_array($raw_data)) {
+            return $fallback_keys;
+        }
+
+        $feature_rows = array();
+        if (isset($raw_data['features']) && is_array($raw_data['features'])) {
+            $feature_rows = $raw_data['features'];
+        } elseif (isset($raw_data['wordpress_vapt']) && is_array($raw_data['wordpress_vapt'])) {
+            $feature_rows = $raw_data['wordpress_vapt'];
+        }
+
+        if (empty($feature_rows)) {
+            return $fallback_keys;
+        }
+
+        $discovered = array();
+        foreach ($feature_rows as $feature) {
+            if (!is_array($feature)) {
+                continue;
+            }
+            foreach (array_keys($feature) as $key) {
+                if (in_array($key, $runtime_excluded, true)) {
+                    continue;
+                }
+                $discovered[$key] = true;
+            }
+        }
+
+        $discovered_keys = array_keys($discovered);
+        if (empty($discovered_keys)) {
+            return $fallback_keys;
+        }
+
+        $prioritized = array_values(array_filter($fallback_keys, function ($key) use ($discovered_keys) {
+            return in_array($key, $discovered_keys, true);
+        }));
+        $remaining = array_values(array_filter($discovered_keys, function ($key) use ($prioritized) {
+            return !in_array($key, $prioritized, true);
+        }));
+        sort($remaining, SORT_STRING);
+
+        return array_values(array_unique(array_merge($prioritized, $remaining)));
+    }
+
+    /**
      * Save column preferences to WordPress Options Table
      */
     public function save_column_preferences($request)
@@ -2191,8 +2316,8 @@ class VAPTGUARD_REST
         $column_order = isset($body['column_order']) ? $body['column_order'] : array();
         $visible_cols = isset($body['visible_cols']) ? $body['visible_cols'] : array();
 
-        // Filter out invalid fields (like 'title') - only allow valid data file fields
-        $valid_keys = array('RiskID', 'id', 'name', 'description', 'category', 'severity', 'owasp', 'test_method', 'verification_steps', 'remediation');
+        // Filter out runtime/internal fields - allow only active datafile-derived feature keys
+        $valid_keys = $this->get_valid_datafile_column_keys();
         $column_order = array_values(array_filter($column_order, function($key) use ($valid_keys) {
             return in_array($key, $valid_keys);
         }));

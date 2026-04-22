@@ -3,6 +3,9 @@
 ## Overview
 Plugin foundation - activate, create DB tables, register menus, load features in Draft state.
 
+Canonical datasource for this phase:
+- `data/Updated_Feature_List_159_Adaptive.json` (single source of truth)
+
 ---
 
 ## Phase Goal
@@ -73,7 +76,7 @@ Tested up to: 6.4
 ### 1.5 Data File
 | Source | Status |
 |--------|--------|
-| `data/Feature-List-159-Adaptive-Updated.json` | Already present - no copy needed |
+| `data/Updated_Feature_List_159_Adaptive.json` | Already present - no copy needed |
 
 ---
 
@@ -211,15 +214,22 @@ vaptsecure/v1  → vaptguard/v1
 
 ### How Features Load:
 
-1. **Source**: `data/Feature-List-159-Adaptive-Updated.json`
+1. **Source**: `data/Updated_Feature_List_159_Adaptive.json`
 2. **Method**: On activation, iterate through all 159 features
 3. **Initial Status**: 'Draft'
+4. **Metadata Source**: Read file contract from `meta.*` keys
+5. **Normalization**:
+   - Normalize `granular_controls.reference = _rate_limiting_controls` to `rate_limiting_controls`
+   - Handle mixed `form_builder_support` shapes (`supported_form_builders` vs `wordpress_core_forms`)
+   - Missing `owasp` values must not block loading
 
 ### Code Pattern:
 ```php
 // On plugin activation
-$features_json = file_get_contents(VAPTGUARD_PATH . 'data/Feature-List-159-Adaptive-Updated.json');
-$features = json_decode($features_json, true);
+$features_json = file_get_contents(VAPTGUARD_PATH . 'data/Updated_Feature_List_159_Adaptive.json');
+$catalog = json_decode($features_json, true);
+$features = $catalog['features'] ?? array();
+$meta = $catalog['meta'] ?? array();
 
 // For each feature key in _index['by_feature_id']:
 // INSERT INTO wp_vaptguard_feature_status (feature_key, status)
@@ -247,6 +257,9 @@ $features = json_decode($features_json, true);
   - [ ] VAPTGuard Workbench
   - [ ] VAPTGuard Domain Admin
 - [ ] Features load from JSON file in Draft state (159 features)
+- [ ] Loader reads metadata from `meta.*` and validates `meta.total_features = 159`
+- [ ] Normalization rule applied for `_rate_limiting_controls` reference
+- [ ] Missing `owasp` fields do not fail loading
 - [ ] No naming conflicts with VAPTSecure
 
 ---
@@ -269,7 +282,7 @@ VAPTSecureV2/
 │   └── interfaces/
 │       └── interface-vaptguard-driver.php  # ✓ Clone
 ├── data/
-│   └── Feature-List-159-Adaptive-Updated.json  # (already present)
+│   └── Updated_Feature_List_159_Adaptive.json  # (already present)
 ```
 
 ---
@@ -287,6 +300,7 @@ VAPTSecureV2/
 - [ ] Clone auth stub interface
 - [ ] Clone driver interface
 - [ ] Update data file reference
+- [ ] Implement datasource normalization layer for known schema mismatches
 - [ ] Test: Activate plugin
 - [ ] Verify: 7 tables created
 - [ ] Verify: Menus appear

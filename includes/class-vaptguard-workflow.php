@@ -11,13 +11,45 @@ if (! defined('ABSPATH')) {
 class VAPTGUARD_Workflow
 {
     /**
+     * Normalize a status value to the canonical title-case form.
+     */
+    public static function normalize_status($status)
+    {
+        if (class_exists('VAPTGUARD_DB')) {
+            return VAPTGUARD_DB::normalize_status($status);
+        }
+
+        $status = strtolower(trim((string) $status));
+        $map = array(
+            'available'   => 'Draft',
+            'draft'       => 'Draft',
+            'develop'     => 'Develop',
+            'in_progress' => 'Develop',
+            'testing'     => 'Test',
+            'test'        => 'Test',
+            'implemented' => 'Release',
+            'release'     => 'Release',
+        );
+
+        return isset($map[$status]) ? $map[$status] : ucfirst($status);
+    }
+
+    /**
+     * Normalize a status value to the canonical lookup key.
+     */
+    public static function normalize_status_key($status)
+    {
+        return strtolower(self::normalize_status($status));
+    }
+
+    /**
      * Validate if a transition from old status to new status is allowed.
      */
     public static function is_transition_allowed($old_status, $new_status)
     {
         // Map legacy status if they exist and normalize to lowercase for rules
-        $old = strtolower(self::map_status($old_status));
-        $new = strtolower(self::map_status($new_status));
+        $old = self::normalize_status_key($old_status);
+        $new = self::normalize_status_key($new_status);
 
         if ($old === $new) { return true;
         }
@@ -52,7 +84,7 @@ class VAPTGUARD_Workflow
             )
         );
 
-        $old_status = $current ? $current->status : 'draft';
+        $old_status = $current ? self::normalize_status($current->status) : 'Draft';
         error_log("VAPT WORKFLOW: Feature '{$feature_key}' current status is '{$old_status}'");
 
         if (! self::is_transition_allowed($old_status, $new_status)) {
@@ -61,15 +93,16 @@ class VAPTGUARD_Workflow
         }
 
         // Update Status
+        $new_status = self::normalize_status($new_status);
         $update_data = array('status' => $new_status);
-        if ($new_status === 'Release' || $new_status === 'release') {
+        if ($new_status === 'Release') {
             $update_data['implemented_at'] = current_time('mysql');
         } else {
             $update_data['implemented_at'] = null;
         }
 
         // 🛡️ Automated Initiation Check (Draft -> Develop)
-        if (strtolower($old_status) === 'draft' && strtolower($new_status) === 'develop') {
+        if (self::normalize_status_key($old_status) === 'draft' && self::normalize_status_key($new_status) === 'develop') {
             if (class_exists('VAPTGUARD_AI_Config')) {
                 VAPTGUARD_AI_Config::verify_and_repair();
             }
@@ -95,7 +128,7 @@ class VAPTGUARD_Workflow
         );
 
         // Special Case: Reset if moving back to Draft
-        if (strtolower($new_status) === 'draft') {
+        if (self::normalize_status_key($new_status) === 'draft') {
             // 1. Wipe History
             $wpdb->delete($table_history, array('feature_key' => $feature_key));
 
@@ -160,7 +193,7 @@ class VAPTGUARD_Workflow
         $develop_features = $wpdb->get_results(
             $wpdb->prepare(
                 "SELECT feature_key, implemented_at, assigned_to, 'develop' as source FROM $table_status WHERE status = %s",
-                'Develop'
+                self::normalize_status('Develop')
             ), ARRAY_A
         );
 
@@ -178,7 +211,7 @@ class VAPTGUARD_Workflow
         $release_features = $wpdb->get_results(
             $wpdb->prepare(
                 "SELECT feature_key, implemented_at, assigned_to, 'release' as source FROM $table_status WHERE status = %s",
-                'Release'
+                self::normalize_status('Release')
             ), ARRAY_A
         );
 
@@ -302,7 +335,7 @@ class VAPTGUARD_Workflow
         $develop_features = $wpdb->get_col(
             $wpdb->prepare(
                 "SELECT feature_key FROM $table_status WHERE status = %s",
-                'Develop'
+                self::normalize_status('Develop')
             )
         );
 
@@ -318,7 +351,7 @@ class VAPTGUARD_Workflow
         $release_features = $wpdb->get_col(
             $wpdb->prepare(
                 "SELECT feature_key FROM $table_status WHERE status = %s",
-                'Release'
+                self::normalize_status('Release')
             )
         );
 
@@ -382,13 +415,7 @@ class VAPTGUARD_Workflow
      */
     private static function map_status($status)
     {
-        $map = array(
-        'available'   => 'draft',
-        'in_progress' => 'develop',
-        'testing'     => 'test',
-        'implemented' => 'release'
-        );
-        return isset($map[$status]) ? $map[$status] : $status;
+        return self::normalize_status($status);
     }
 }
 
