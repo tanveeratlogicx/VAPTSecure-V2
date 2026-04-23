@@ -204,6 +204,9 @@ require_once VAPTGUARD_PATH . 'includes/class-vaptguard-environment-detector.php
 require_once VAPTGUARD_PATH . 'includes/class-vaptguard-license-manager.php';
 require_once VAPTGUARD_PATH . 'includes/class-vaptguard-admin.php';
 require_once VAPTGUARD_PATH . 'includes/class-vaptguard-rest.php';
+if (file_exists(VAPTGUARD_PATH . 'includes/admin/class-vapt-diagnostics-page.php')) {
+    require_once VAPTGUARD_PATH . 'includes/admin/class-vapt-diagnostics-page.php';
+}
 
 // Phase 3: Feature lifecycle, schema validation, and enforcement runtime
 require_once VAPTGUARD_PATH . 'includes/class-vaptguard-workflow.php';
@@ -575,6 +578,18 @@ if (! function_exists('is_vaptguard_localhost')) {
 }
 
 /**
+ * Whether this runtime is a generated client build.
+ *
+ * @return bool
+ */
+if (! function_exists('vaptguard_is_client_build')) {
+    function vaptguard_is_client_build()
+    {
+        return defined('VAPTGUARD_CLIENT_BUILD') && VAPTGUARD_CLIENT_BUILD;
+    }
+}
+
+/**
  * Admin Menu Setup
  */
 add_action('admin_menu', 'vaptguard_add_admin_menu');
@@ -598,6 +613,7 @@ if (! function_exists('vaptguard_check_permissions')) {
 if (! function_exists('vaptguard_add_admin_menu')) {
     function vaptguard_add_admin_menu()
     {
+        $is_client_build = vaptguard_is_client_build();
         $is_superadmin_identity = is_vaptguard_superadmin(false);
 
         // 1. Parent Menu (Visible to all admins with manage_options)
@@ -612,7 +628,7 @@ if (! function_exists('vaptguard_add_admin_menu')) {
         );
 
         // Superadmin Only Sub-menus
-        if ($is_superadmin_identity) {
+        if ($is_superadmin_identity && !$is_client_build) {
             // Sub-menu 1: Workbench
             add_submenu_page(
                 'vaptguard',
@@ -632,6 +648,17 @@ if (! function_exists('vaptguard_add_admin_menu')) {
                 'vaptguard-domain-admin',
                 'vaptguard_render_admin_page'
             );
+
+            if (class_exists('VAPTGUARD_Diagnostics_Page')) {
+                add_submenu_page(
+                    'vaptguard',
+                    __('VAPTGuard Diagnostics', 'vaptguard'),
+                    __('Diagnostics', 'vaptguard'),
+                    'manage_options',
+                    'vaptguard-diagnostics',
+                    array('VAPTGUARD_Diagnostics_Page', 'render')
+                );
+            }
         }
 
         // Remove the default duplicate submenu item created by WordPress
@@ -650,7 +677,7 @@ if (! function_exists('vaptguard_handle_legacy_redirects')) {
         }
         $legacy_slugs = array('vapt-secure', 'vapt-domain-admin', 'vapt-copilot', 'vapt-copilot-main', 'vapt-copilot-status', 'vapt-copilot-domain-build', 'vapt-client');
         if (in_array($_GET['page'], $legacy_slugs)) {
-            $target = ($_GET['page'] === 'vapt-domain-admin') ? 'vaptguard-domain-admin' : 'vaptguard';
+            $target = ($_GET['page'] === 'vapt-domain-admin' && !vaptguard_is_client_build()) ? 'vaptguard-domain-admin' : 'vaptguard';
             wp_safe_redirect(admin_url('admin.php?page=' . $target));
             exit;
         }
@@ -685,6 +712,10 @@ if (! function_exists('vaptguard_render_client_status_page')) {
 if (! function_exists('vaptguard_render_workbench_page')) {
     function vaptguard_render_workbench_page()
     {
+        if (vaptguard_is_client_build()) {
+            wp_die(__('Workbench is disabled in client build mode.', 'vaptguard'));
+        }
+
         if (! is_vaptguard_superadmin(true)) {
             if (is_vaptguard_superadmin(false)) {
                 $identity = vaptguard_get_superadmin_identity();
@@ -765,6 +796,10 @@ if (! function_exists('vaptguard_render_admin_page')) {
 if (! function_exists('vaptguard_master_dashboard_page')) {
     function vaptguard_master_dashboard_page()
     {
+        if (vaptguard_is_client_build()) {
+            wp_die(__('Domain Admin is disabled in client build mode.', 'vaptguard'));
+        }
+
         // Verify Strict Identity AND Session
         if (! is_vaptguard_superadmin(true)) {
             if (is_vaptguard_superadmin(false)) {
@@ -801,6 +836,7 @@ function vaptguard_enqueue_admin_assets($hook)
 {
     $screen = get_current_screen();
     $is_superadmin = is_vaptguard_superadmin();
+    $is_client_build = vaptguard_is_client_build();
     if (!$screen) { return;
     }
     
@@ -808,7 +844,7 @@ function vaptguard_enqueue_admin_assets($hook)
     wp_enqueue_style('vaptguard-admin-css', VAPTGUARD_URL . 'assets/css/admin.css', array('wp-components'), VAPTGUARD_VERSION);
 
     // 1. Superadmin Dashboard (admin.js)
-    if ($screen->id === 'toplevel_page_vaptguard-domain-admin' || $screen->id === 'vaptguard_page_vaptguard-domain-admin' || strpos($screen->id, 'vaptguard-domain-admin') !== false) {
+    if (!$is_client_build && ($screen->id === 'toplevel_page_vaptguard-domain-admin' || $screen->id === 'vaptguard_page_vaptguard-domain-admin' || strpos($screen->id, 'vaptguard-domain-admin') !== false)) {
         // Enqueue Auto-Interface Generator (Module)
         wp_enqueue_script(
             'vaptguard-interface-generator',
@@ -847,7 +883,7 @@ function vaptguard_enqueue_admin_assets($hook)
     }
 
     // 3. Workbench Page (workbench.js)
-    if ($screen->id === 'vaptguard_page_vaptguard-workbench' || strpos($screen->id, 'vaptguard-workbench') !== false) {
+    if (!$is_client_build && ($screen->id === 'vaptguard_page_vaptguard-workbench' || strpos($screen->id, 'vaptguard-workbench') !== false)) {
         wp_enqueue_script(
             'vaptguard-interface-generator',
             VAPTGUARD_URL . 'assets/js/modules/interface-generator.js',
@@ -874,6 +910,7 @@ function vaptguard_enqueue_admin_assets($hook)
     // Common Settings Localization
     $vapt_settings = array(
         'isSuper' => $is_superadmin,
+        'isClientBuild' => $is_client_build,
         'pluginVersion' => VAPTGUARD_VERSION,
         'pluginName' => 'VAPTGuard Pro',
         'currentDomain' => parse_url(home_url(), PHP_URL_HOST),

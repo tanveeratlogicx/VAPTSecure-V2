@@ -74,6 +74,16 @@ class VAPTGUARD_REST extends VAPTGUARD_REST_Base
         return $dir;
     }
 
+    /**
+     * Client build runtime flag.
+     *
+     * @return bool
+     */
+    private static function is_client_build_runtime()
+    {
+        return defined('VAPTGUARD_CLIENT_BUILD') && VAPTGUARD_CLIENT_BUILD;
+    }
+
     public function __construct()
     {
         add_action('rest_api_init', array($this, 'register_routes'));
@@ -81,6 +91,8 @@ class VAPTGUARD_REST extends VAPTGUARD_REST_Base
 
     public function register_routes()
     {
+        $is_client_build = self::is_client_build_runtime();
+
         register_rest_route(
             'vaptguard/v1', '/features', array(
             'methods'  => 'GET',
@@ -202,45 +214,47 @@ class VAPTGUARD_REST extends VAPTGUARD_REST_Base
             )
         );
 
-        register_rest_route(
-            'vaptguard/v1', '/domains', array(
-            'methods'  => 'GET',
-            'callback' => array($this, 'get_domains'),
-            'permission_callback' => array($this, 'check_permission'),
-            )
-        );
-
-        register_rest_route(
-            'vaptguard/v1', '/domains/update', array(
-            'methods'  => 'POST',
-            'callback' => array($this, 'update_domain'),
-            'permission_callback' => array($this, 'check_permission'),
-            )
-        );
-
-        register_rest_route(
-            'vaptguard/v1', '/domains/features', array(
-            'methods'  => 'POST',
-            'callback' => array($this, 'update_domain_features'),
-            'permission_callback' => array($this, 'check_permission'),
-            )
-        );
-
-        register_rest_route(
-            'vaptguard/v1', '/domains/delete', array(
-            'methods'  => 'DELETE',
-            'callback' => array($this, 'delete_domain'),
-            'permission_callback' => array($this, 'check_permission'),
-            )
-        );
-
-        register_rest_route(
-            'vaptguard/v1', '/domains/batch-delete', array(
-                'methods' => 'POST',
-                'callback' => array($this, 'batch_delete_domains'),
+        if (!$is_client_build) {
+            register_rest_route(
+                'vaptguard/v1', '/domains', array(
+                'methods'  => 'GET',
+                'callback' => array($this, 'get_domains'),
                 'permission_callback' => array($this, 'check_permission'),
-            )
-        );
+                )
+            );
+
+            register_rest_route(
+                'vaptguard/v1', '/domains/update', array(
+                'methods'  => 'POST',
+                'callback' => array($this, 'update_domain'),
+                'permission_callback' => array($this, 'check_permission'),
+                )
+            );
+
+            register_rest_route(
+                'vaptguard/v1', '/domains/features', array(
+                'methods'  => 'POST',
+                'callback' => array($this, 'update_domain_features'),
+                'permission_callback' => array($this, 'check_permission'),
+                )
+            );
+
+            register_rest_route(
+                'vaptguard/v1', '/domains/delete', array(
+                'methods'  => 'DELETE',
+                'callback' => array($this, 'delete_domain'),
+                'permission_callback' => array($this, 'check_permission'),
+                )
+            );
+
+            register_rest_route(
+                'vaptguard/v1', '/domains/batch-delete', array(
+                    'methods' => 'POST',
+                    'callback' => array($this, 'batch_delete_domains'),
+                    'permission_callback' => array($this, 'check_permission'),
+                )
+            );
+        }
         
         // License status check endpoint
         register_rest_route(
@@ -269,40 +283,42 @@ class VAPTGUARD_REST extends VAPTGUARD_REST_Base
             )
         );
         
-        register_rest_route(
-            'vaptguard/v1', '/build/generate', array(
-            'methods'  => 'POST',
-            'callback' => array($this, 'generate_build'),
-            'permission_callback' => array($this, 'check_permission'),
-            'args' => array(
-                'installation_limit' => array(
-                    'type' => 'integer',
-                    'default' => 1,
-                    'sanitize_callback' => 'absint',
+        if (!$is_client_build) {
+            register_rest_route(
+                'vaptguard/v1', '/build/generate', array(
+                'methods'  => 'POST',
+                'callback' => array($this, 'generate_build'),
+                'permission_callback' => array($this, 'check_permission'),
+                'args' => array(
+                    'installation_limit' => array(
+                        'type' => 'integer',
+                        'default' => 1,
+                        'sanitize_callback' => 'absint',
+                    ),
+                    'license_scope' => array(
+                        'type' => 'string',
+                        'default' => 'single',
+                    ),
+                    'include_config' => array(
+                        'type' => 'boolean',
+                        'default' => true,
+                    ),
+                    'include_data' => array(
+                        'type' => 'boolean',
+                        'default' => false,
+                    ),
                 ),
-                'license_scope' => array(
-                    'type' => 'string',
-                    'default' => 'single',
-                ),
-                'include_config' => array(
-                    'type' => 'boolean',
-                    'default' => true,
-                ),
-                'include_data' => array(
-                    'type' => 'boolean',
-                    'default' => false,
-                ),
-            ),
-            )
-        );
+                )
+            );
 
-        register_rest_route(
-            'vaptguard/v1', '/build/save-config', array(
-            'methods'  => 'POST',
-            'callback' => array($this, 'save_config_to_root'),
-            'permission_callback' => array($this, 'check_permission'),
-            )
-        );
+            register_rest_route(
+                'vaptguard/v1', '/build/save-config', array(
+                'methods'  => 'POST',
+                'callback' => array($this, 'save_config_to_root'),
+                'permission_callback' => array($this, 'check_permission'),
+                )
+            );
+        }
 
         register_rest_route(
             'vaptguard/v1', '/settings/enforcement', array(
@@ -344,13 +360,15 @@ class VAPTGUARD_REST extends VAPTGUARD_REST_Base
             )
         );
 
-        register_rest_route(
-            'vaptguard/v1', '/build/sync-config', array(
-            'methods'  => 'POST',
-            'callback' => array($this, 'sync_config_from_file'),
-            'permission_callback' => array($this, 'check_permission'),
-            )
-        );
+        if (!$is_client_build) {
+            register_rest_route(
+                'vaptguard/v1', '/build/sync-config', array(
+                'methods'  => 'POST',
+                'callback' => array($this, 'sync_config_from_file'),
+                'permission_callback' => array($this, 'check_permission'),
+                )
+            );
+        }
 
 
         register_rest_route(
@@ -1746,6 +1764,10 @@ class VAPTGUARD_REST extends VAPTGUARD_REST_Base
 
     public function update_domain($request)
     {
+        if (self::is_client_build_runtime()) {
+            return new WP_REST_Response(array('error' => 'Domain admin is disabled in client build mode.'), 403);
+        }
+
         global $wpdb;
         $domain = $request->get_param('domain');
         $is_wildcard = $request->get_param('is_wildcard');
@@ -1907,6 +1929,10 @@ class VAPTGUARD_REST extends VAPTGUARD_REST_Base
 
     public function delete_domain($request)
     {
+        if (self::is_client_build_runtime()) {
+            return new WP_REST_Response(array('error' => 'Domain admin is disabled in client build mode.'), 403);
+        }
+
         $domain_id = $request->get_param('id');
         if (!$domain_id) {
             return new WP_REST_Response(array('error' => 'Missing domain ID'), 400);
@@ -1918,6 +1944,10 @@ class VAPTGUARD_REST extends VAPTGUARD_REST_Base
 
     public function batch_delete_domains($request)
     {
+        if (self::is_client_build_runtime()) {
+            return new WP_REST_Response(array('error' => 'Domain admin is disabled in client build mode.'), 403);
+        }
+
         $ids = $request->get_param('ids');
         if (!$ids || !is_array($ids)) {
             return new WP_REST_Response(array('error' => 'Missing or invalid domain IDs'), 400);
@@ -1929,6 +1959,10 @@ class VAPTGUARD_REST extends VAPTGUARD_REST_Base
 
     public function update_domain_features($request)
     {
+        if (self::is_client_build_runtime()) {
+            return new WP_REST_Response(array('error' => 'Domain admin is disabled in client build mode.'), 403);
+        }
+
         global $wpdb;
         $domain_id = $request->get_param('domain_id');
         $features = $request->get_param('features');
@@ -1956,6 +1990,10 @@ class VAPTGUARD_REST extends VAPTGUARD_REST_Base
 
     public function generate_build($request)
     {
+        if (self::is_client_build_runtime()) {
+            return new WP_REST_Response(array('success' => false, 'message' => 'Build generation is disabled in client build mode.'), 403);
+        }
+
         $data = $request->get_json_params();
         if (!is_array($data)) {
             $data = [];
@@ -1980,6 +2018,10 @@ class VAPTGUARD_REST extends VAPTGUARD_REST_Base
 
     public function save_config_to_root($request)
     {
+        if (self::is_client_build_runtime()) {
+            return new WP_REST_Response(array('error' => 'Config generation is disabled in client build mode.'), 403);
+        }
+
         $domain = $request->get_param('domain');
         $version = $request->get_param('version');
         $features = $request->get_param('features');
@@ -2013,6 +2055,10 @@ class VAPTGUARD_REST extends VAPTGUARD_REST_Base
 
     public function sync_config_from_file($request)
     {
+        if (self::is_client_build_runtime()) {
+            return new WP_REST_Response(array('error' => 'Config sync is disabled in client build mode.'), 403);
+        }
+
         $domain = $request->get_param('domain');
         if (!$domain) {
             return new WP_REST_Response(array('error' => 'Missing domain'), 400);
